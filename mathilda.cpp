@@ -351,9 +351,6 @@ bool MathildaUtils::is_subdomain(const char *l) {
 bool MathildaUtils::link_blacklist(const char *domain, const char *l) {
 	std::string link(l);
 
-	//std::regex e("(.*www.yahoo.com.*|.*search.yahoo.com.*|.*mail.yahoo.com.*|.*javascript.*|.*LegalLinks.*|.*privacy.*)");
-	//return std::regex_match(link, e);
-
 	if(link[0] == '#')
 		return true;
 
@@ -365,9 +362,6 @@ bool MathildaUtils::link_blacklist(const char *domain, const char *l) {
 
 bool MathildaUtils::page_blacklist(const char *l) {
 	std::string link(l);
-
-	//std::regex e("(.*www.yahoo.com.*|.*search.yahoo.com.*|.*mail.yahoo.com.*|.*javascript.*|.*LegalLinks.*|.*privacy.*)");
-	//return std::regex_match(link, e);
 
 	if((link.find("Sorry, the page you requested was not found")) != string::npos
 		|| (link.find("The requested URL was not found on this server")) != string::npos
@@ -392,7 +386,7 @@ bool MathildaUtils::is_http_uri(const char *l) {
 bool MathildaUtils::is_domain_host(const char *domain, const char *l) {
 	std::string link(l);
 
-	//std::regex e(".*\\.yahoo.com.*");
+	//std::regex e(".*\\.example.com.*");
 	//return std::regex_match(link, e);
 
 	if(link.find(domain) != string::npos)
@@ -448,51 +442,51 @@ void my_finish(uint8_t *sm) {
 int main(int argc, char *argv[]) {
 	bool ret;
 
-	std::string host = MathildaUtils::extract_host("yahoo.com", "http://example.test.yahoo.com/something/");
-	printf("extract_host(yahoo.com, example.test.yahoo.com/something) = %s\n", host.c_str());
+	std::string host = MathildaUtils::extract_host("example.com", "http://example.test.example.com/something/");
+	printf("extract_host(example.com, example.test.example.com/something) = %s\n", host.c_str());
 
-	std::string page = MathildaUtils::extract_page("yahoo.com", "http://example.test.yahoo.com/something/test.php");
-	printf("extract_page(yahoo.com, example.test.yahoo.com/something/test.php) = %s\n", host.c_str());
+	std::string page = MathildaUtils::extract_page("example.com", "http://example.test.example.com/something/test.php");
+	printf("extract_page(example.com, example.test.example.com/something/test.php) = %s\n", host.c_str());
 
-	ret = MathildaUtils::is_domain_host(".yahoo.com", "/kb/tv");
-	printf("is_yahoo_host('/kb/tv') | ret = %d\n", ret);
+	ret = MathildaUtils::is_domain_host(".example.com", "/example");
+	printf("is_domain_host('/example') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_domain_host(".yahoo.com", "http://www.yahoo.com");
-	printf("is_yahoo_host('http://www.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::is_domain_host(".example.com", "http://www.example.com");
+	printf("is_domain_host('http://www.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_domain_host(".yahoo.com", "http://sports.exampleyahoo.com");
-	printf("is_yahoo_host('http://sports.somethingyahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::is_domain_host(".example.com", "http://sports.exampleaaa.com");
+	printf("is_domain_host('http://http://sports.exampleaaa.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_domain_host(".yahoo.com", "http://example.test.yahoo.com/index.html");
-	printf("is_yahoo_host('http://example.test.yahoo.com/index.html') | ret = %d\n", ret);
+	ret = MathildaUtils::is_domain_host(".example.com", "http://example.test.something.com/index.html");
+	printf("is_domain_host('http://example.test.something.com/index.html') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_subdomain("a.b.yahoo.com");
-	printf("is_subdomain(a.b.yahoo.com) | ret = %d\n", ret);
+	ret = MathildaUtils::is_subdomain("a.b.example.com");
+	printf("is_subdomain(a.b.example.com) | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_subdomain("www.yahoo.com");
-	printf("is_subdomain(www.yahoo.com) | ret = %d\n", ret);
+	ret = MathildaUtils::is_subdomain("www.example.com");
+	printf("is_subdomain(www.example.com) | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_http_uri("http://sports.yahoo.com");
-	printf("is_http_uri('http://sports.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::is_http_uri("http://sports.example.com");
+	printf("is_http_uri('http://sports.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_http_uri("http://www.yahoo.com");
-	printf("is_http_uri('http://www.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::is_http_uri("http://www.example.com");
+	printf("is_http_uri('http://www.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::link_blacklist("http://www.yahoo.com", "http://www.yahoo.com");
-	printf("link_blacklist('http://www.yahoo.com', 'http://www.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::link_blacklist("http://www.example.com", "http://www.example.com");
+	printf("link_blacklist('http://www.example.com', 'http://www.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::link_blacklist("http://www.example.com","http://mail.yahoo.com");
-	printf("link_blacklist('http://www.example.com', 'http://mail.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::link_blacklist("http://www.example.com","http://mail.example.com");
+	printf("link_blacklist('http://www.example.com', 'http://mail.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::link_blacklist("http://yahoo.com", "http://admin.yahoo.com");
-	printf("link_blacklist('http://www.yahoo.com', 'http://admin.yahoo.com') | ret = %d\n", ret);
+	ret = MathildaUtils::link_blacklist("http://example.com", "http://admin.example.com");
+	printf("link_blacklist('http://www.example.com', 'http://admin.example.com') | ret = %d\n", ret);
 
 	unique_ptr<Mathilda> m(new Mathilda());
 
 	m->finish = my_finish;
 
 	for(int j = 0; j < 20000; j++) {
-		Instruction *i = new Instruction((char *) "example.test.yahoo.com", (char *) "/test.html");
+		Instruction *i = new Instruction((char *) "example.test.example.com", (char *) "/test.html");
 		i->before = my_before;
 		i->after = my_after;
 		m->add_instruction(i);
