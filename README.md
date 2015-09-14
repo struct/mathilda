@@ -51,8 +51,8 @@ In each of these calls d is a domain and l is a link. These utility functions ne
 	* is_http_uri(const char *l) - Returns true if your link is an http/http URI
 	* is_subdomain(const char *l) - Returns true if the link is to a subdomain
 	* is_domain_host(const char *d, const char *l) - Returns true if the link is to domain host d
-	* extract_host(const char *d, const char *l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
-	* extract_page(const char *d, const char *l) - Returns /test/index.php from http://test.y.example.com/test/index.php
+	* extract_host_from_url(const char *l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
+	* extract_page_from_url(const char *l) - Returns /test/index.php from http://test.y.example.com/test/index.php
 
 ### Instruction class members
 

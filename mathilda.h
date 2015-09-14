@@ -89,10 +89,11 @@ public:
 	static bool link_blacklist(const char *domain, const char *l);
 	static bool page_blacklist(const char *l);
 	static bool is_http_uri(const char *l);
+	static bool is_https_uri(const char *l);
 	static bool is_subdomain(const char *l);
 	static bool is_domain_host(const char *domain, const char *l);
-	static std::string extract_host(const char *domain, const char *l);
-	static std::string extract_page(const char *domain, const char *l);
+	static std::string extract_host_from_url(const char *l);
+	static std::string extract_page_from_url(const char *l);
 };
 
 class Mathilda {
