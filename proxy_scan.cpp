@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 	unique_ptr<Mathilda> m(new Mathilda());
 
 	vector <std::string> hosts;
-	hosts = read_file("potential_proxy_hosts.txt");
+	hosts = read_file(argv[1]);
 
 	for(auto y : hosts) {
 		Instruction *i = new Instruction((char *) y.c_str(), "host.you.want.to.proxy.to.example.com");
