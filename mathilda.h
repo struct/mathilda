@@ -42,9 +42,12 @@ public:
 		path.assign(p);
 		http_method.assign("GET");
 		user_agent.assign(default_ua);
+		proxy.assign("");
 		ssl = false;
 		follow_redirects = true;
+		use_proxy = false;
 		port = 80;
+		proxy_port = 8080;
 		response_code = 200;
 		before = NULL;
 		after = NULL;
@@ -66,10 +69,13 @@ public:
 	std::string post_body;
 	std::string cookie_file;
 	std::string user_agent;
+	std::string proxy;
 	std::map<std::string,std::string> post_parameters; // XXX TODO currently unused
 	bool ssl;
 	bool follow_redirects;
-	unsigned short port;
+	bool use_proxy;
+	uint16_t port;
+	uint16_t proxy_port;
 	uint32_t response_code;
 	Response response;
 	CURLcode curl_code;

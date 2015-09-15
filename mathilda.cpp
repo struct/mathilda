@@ -268,6 +268,11 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		i->response.text = NULL;
 		i->response.size = 0;
 
+		if(i->use_proxy == true) {
+			curl_easy_setopt(i->easy, CURLOPT_PROXY, i->proxy.c_str());
+			curl_easy_setopt(i->easy, CURLOPT_PROXYPORT, i->proxy_port);
+		}
+
 		curl_easy_setopt(i->easy, CURLOPT_NOSIGNAL, 1); // do not remove
 		curl_easy_setopt(i->easy, CURLOPT_DNS_CACHE_TIMEOUT, 1);
 		curl_easy_setopt(i->easy, CURLOPT_WRITEFUNCTION, _curl_write_callback);
