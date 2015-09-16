@@ -66,7 +66,7 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* user_agent (std::string) - User agent string to use (default is Chrome)
 	* proxy (std::string) - Hostname of the proxy you want to use
 	* port (short) - Server port to connect to
-	* proxy_por (short) - Proxy port to connect to
+	* proxy_port (short) - Proxy port to connect to
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
 	* ssl (boolean) - SSL support
 	* use_proxy (boolean) - Use the proxy configured with proxy/proxy_port
