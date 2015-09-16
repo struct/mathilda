@@ -64,9 +64,12 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* post_body (std::string) - The POST body to send to the server
 	* cookie_file (std::string) - Location on disk of a Curl cookie file
 	* user_agent (std::string) - User agent string to use (default is Chrome)
+	* proxy (std::string) - Hostname of the proxy you want to use
 	* port (short) - Server port to connect to
+	* proxy_por (short) - Proxy port to connect to
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
 	* ssl (boolean) - SSL support
+	* use_proxy (boolean) - Use the proxy configured with proxy/proxy_port
 	* follow_redirects (boolean) - Follow HTTP redirects
 	* curl_code (CURLCode) - The Curl response code returned after the request is finished
 	* before(Instruction *, CURL *) - A callback function pointer, executed before curl_perform
@@ -117,15 +120,19 @@ You can use this shared memory to store anything, and then access it later using
 ## FAQ:
 
 Q: What third party requirements are there?
+
 A: libcurl, libuv, libstdc++.x86_64 libstdc++-devel.x86_64, a modern GCC/Clang (I recommend libgumbo for HTML parsing)
 
 Q: Why not just write a better libcurl?
+
 A: Because theres nothing wrong with libcurl. In fact it works perfectly for both HTTP and webapp testing. But you end up writing the same code over and over everytime you want to write a small testing tool. Mathilda solves that problem by implementing the plumbing in such a way that scales your small tools up with little to no additional work.
 
 Q: What has Mathilda been used for?
+
 A: Web application security testing, web server and caching proxy load testing, HTTP fuzzing, and many other things.
 
 Q: How do I compile/use Mathilda and these tools?
+
 A: Heres the short answer:
 
 Compile Mathilda as a library:
@@ -154,4 +161,3 @@ Written by Chris Rohlf
 * post_parameters map is currently unused
 * HTTP2 support (requires libcurl changes)
 * Blacklists could and should be configurable and populated via the API
-* Proxy support
