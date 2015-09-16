@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	hosts = read_file(argv[1]);
 
 	for(auto y : hosts) {
-		Instruction *i = new Instruction((char *) y.c_str(), "host.you.want.to.proxy.to.example.com");
+		Instruction *i = new Instruction("host.you.want.to.proxy.to.example.com", "/");
 		i->proxy = y;
 		i->proxy_port = 80;
 		i->use_proxy = true;
