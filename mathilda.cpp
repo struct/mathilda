@@ -126,11 +126,17 @@ void check_multi_info(Mathilda *m) {
 	int32_t msgs_left;
 	uint32_t response_code;
 	CURLMsg *msg = NULL;
+	CURLcode cc = CURLE_OK;
 	Instruction *i = NULL;
 
 	while((msg = curl_multi_info_read(m->multi_handle, &msgs_left))) {
 		if(msg->msg == CURLMSG_DONE) {
-			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &i);
+			cc = curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &i);
+
+			if(cc != CURLE_OK || i == NULL) {
+				continue;
+			}
+
 			curl_easy_getinfo(i->easy, CURLINFO_RESPONSE_CODE, &response_code);
 
 			i->curl_code = msg->data.result;
@@ -291,7 +297,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		fprintf(stdout, "[LibMathilda (%d)] Making HTTP request: %s\n", proc_num, url.c_str());
 
 		if(i->use_proxy == true) {
-			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", i->proxy.c_str(), i->proxy_port);
+			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", proc_num, i->proxy.c_str(), i->proxy_port);
 		}
 #endif
 		res = curl_multi_add_handle(multi_handle, i->easy);
