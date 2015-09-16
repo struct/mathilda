@@ -47,7 +47,7 @@ int Mathilda::create_worker_processes() {
 
 			if(p == ERR) {
 #ifdef DEBUG
-				fprintf(stdout, "[Mathilda Debug] Failed to fork!\n");g
+				fprintf(stdout, "[Mathilda Debug] Failed to fork!\n");
 #endif
 			} else if(p == 0) {
 				uint32_t start, end, sz_of_work;
@@ -289,6 +289,10 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 #ifdef DEBUG
 		fprintf(stdout, "[LibMathilda (%d)] Making HTTP request: %s\n", proc_num, url.c_str());
+
+		if(i->use_proxy == true) {
+			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", i->proxy.c_str(), i->proxy_port);
+		}
 #endif
 		res = curl_multi_add_handle(multi_handle, i->easy);
 
