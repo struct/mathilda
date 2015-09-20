@@ -77,7 +77,7 @@ This class needs to be created with the new operator, filled in, and passed to t
 
 ### Response structure members
 
-A pointer to this structure is passed to the Mathilda 'after' callbackg
+A pointer to this structure is passed to the Mathilda 'after' callback
 
 	* text - A char pointer to whatever the server responded with
 	* size - The size of the data the server responded with
