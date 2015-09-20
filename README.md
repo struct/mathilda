@@ -88,7 +88,7 @@ Writing Mathilda callbacks is painless as long as you make use of C++11 std::fun
 
 ```
 int my_after(Instruction *i, CURL *c, Response *r) {
-	printf("Response: %s\n", i->host.c_str(), r->text);
+	printf("Response from %s:\n%s\n", i->host.c_str(), r->text);
 	return OK;
 }
 ...
