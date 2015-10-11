@@ -92,7 +92,7 @@ typedef struct Process_shm {
 class MathildaUtils {
 public:
 	static uint32_t count_cores();
-	static bool link_blacklist(const char *domain, const char *l);
+	static bool link_blacklist(const char *l);
 	static bool page_blacklist(const char *l);
 	static bool is_http_uri(const char *l);
 	static bool is_https_uri(const char *l);

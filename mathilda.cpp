@@ -363,14 +363,18 @@ bool MathildaUtils::is_subdomain(const char *l) {
 	return false;
 }
 
-bool MathildaUtils::link_blacklist(const char *domain, const char *l) {
+bool MathildaUtils::link_blacklist(const char *l) {
 	std::string link(l);
 
 	if(link[0] == '#')
 		return true;
 
-	if(link == domain)
-		return true;
+	const char *blacklist [] = { "example.com" };
+
+	for(int i=0; i < (sizeof(blacklist) / sizeof(char *)); i++) {
+		if(link.find(blacklist[i]) != ERR)
+			return true;
+	}
 
 	return false;
 }
@@ -504,14 +508,11 @@ int main(int argc, char *argv[]) {
 	ret = MathildaUtils::is_http_uri("http://www.example.com");
 	printf("is_http_uri('http://www.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::link_blacklist("http://www.example.com", "http://www.example.com");
-	printf("link_blacklist('http://www.example.com', 'http://www.example.com') | ret = %d\n", ret);
+	ret = MathildaUtils::link_blacklist("http://www.example.com");
+	printf("link_blacklist('http://www.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::link_blacklist("http://www.example.com","http://mail.example.com");
-	printf("link_blacklist('http://www.example.com', 'http://mail.example.com') | ret = %d\n", ret);
-
-	ret = MathildaUtils::link_blacklist("http://example.com", "http://admin.example.com");
-	printf("link_blacklist('http://www.example.com', 'http://admin.example.com') | ret = %d\n", ret);
+	ret = MathildaUtils::link_blacklist("http://mail.example2.com");
+	printf("link_blacklist('http://mail.example2.com') | ret = %d\n", ret);
 
 	unique_ptr<Mathilda> m(new Mathilda());
 

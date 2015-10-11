@@ -46,8 +46,8 @@ If you don't see a function documented here then it isn't intended for tool/exte
 
 In each of these calls d is a domain and l is a link. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
 
-	* link_blacklist(const char *d, const char *l) - Compares a link against a known blacklist of links
-	* page_blacklist(const char *d, const char *l) - Compares a page against a known blacklist of 404 pages
+	* link_blacklist(const char *l) - Compares a link against a known blacklist of links
+	* page_blacklist(const char *l) - Compares a page against a known blacklist of 404 pages
 	* is_http_uri(const char *l) - Returns true if your link is an http/http URI
 	* is_subdomain(const char *l) - Returns true if the link is to a subdomain
 	* is_domain_host(const char *d, const char *l) - Returns true if the link is to domain host d
