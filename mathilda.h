@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <uv.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -92,14 +95,15 @@ typedef struct Process_shm {
 class MathildaUtils {
 public:
 	static uint32_t count_cores();
-	static bool link_blacklist(const char *l);
-	static bool page_blacklist(const char *l);
-	static bool is_http_uri(const char *l);
-	static bool is_https_uri(const char *l);
-	static bool is_subdomain(const char *l);
-	static bool is_domain_host(const char *domain, const char *l);
-	static std::string extract_host_from_url(const char *l);
-	static std::string extract_page_from_url(const char *l);
+	static bool link_blacklist(std::string const &l);
+	static bool page_blacklist(std::string const &l);
+	static bool is_http_uri(std::string const &l);
+	static bool is_https_uri(std::string const &l);
+	static bool is_subdomain(std::string const &l);
+	static bool is_domain_host(std::string const &domain, std::string const &l);
+	static std::string extract_host_from_url(std::string const &l);
+	static std::string extract_path_from_url(std::string const &l);
+	static int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast);
 };
 
 class Mathilda {

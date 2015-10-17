@@ -46,13 +46,21 @@ If you don't see a function documented here then it isn't intended for tool/exte
 
 In each of these calls d is a domain and l is a link. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
 
-	* link_blacklist(const char *l) - Compares a link against a known blacklist of links
-	* page_blacklist(const char *l) - Compares a page against a known blacklist of 404 pages
-	* is_http_uri(const char *l) - Returns true if your link is an http/http URI
-	* is_subdomain(const char *l) - Returns true if the link is to a subdomain
-	* is_domain_host(const char *d, const char *l) - Returns true if the link is to domain host d
-	* extract_host_from_url(const char *l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
-	* extract_page_from_url(const char *l) - Returns /test/index.php from http://test.y.example.com/test/index.php
+	* bool link_blacklist(std::string const &l) - Compares a link against a known blacklist of links
+
+	* bool page_blacklist(std::string const &l) - Compares a page against a known blacklist of 404 pages
+
+	* bool is_http_uri(std::string const &l) - Returns true if your link is an http/http URI
+
+	* bool is_subdomain(std::string const &l) - Returns true if the link is to a subdomain
+
+	* bool is_domain_host(std::string const &d, std::string const &l) - Returns true if the link is to domain host d
+
+	* std::string extract_host_from_url(std::string const &l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
+
+	* std::string extract_path_from_url(std::string const &l) - Returns /test/index.php from http://test.y.example.com/test/index.php
+
+	* int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) - Performs a synchronous name to addr DNS lookup. If fast is true it returns immediately, otherwise the out vector is populated with the results. Returns OK/ERR
 
 ### Instruction class members
 

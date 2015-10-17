@@ -354,112 +354,132 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, 0, 0);
 }
 
-bool MathildaUtils::is_subdomain(const char *l) {
-	std::string link(l);
-
-	if((std::count(link.begin(), link.end(), '.')) < 3)
+bool MathildaUtils::is_subdomain(std::string const &l) {
+	if((std::count(l.begin(), l.end(), '.')) < 3)
 		return true;
 
 	return false;
 }
 
-bool MathildaUtils::link_blacklist(const char *l) {
-	std::string link(l);
-
-	if(link[0] == '#')
+bool MathildaUtils::link_blacklist(std::string const &l) {
+	if(l[0] == '#')
 		return true;
 
 	const char *blacklist [] = { "example.com" };
 
 	for(int i=0; i < (sizeof(blacklist) / sizeof(char *)); i++) {
-		if(link.find(blacklist[i]) != ERR)
+		if(l.find(blacklist[i]) != ERR)
 			return true;
 	}
 
 	return false;
 }
 
-bool MathildaUtils::page_blacklist(const char *l) {
-	std::string link(l);
-
-	if((link.find("Sorry, the page you requested was not found")) != string::npos
-		|| (link.find("The requested URL was not found on this server")) != string::npos
-		|| (link.find("<h2 align=\"center\">File does not exist.</h2>")) != string::npos)
+bool MathildaUtils::page_blacklist(std::string const &l) {
+	if((l.find("Sorry, the page you requested was not found")) != string::npos
+		|| (l.find("The requested URL was not found on this server")) != string::npos
+		|| (l.find("<h2 align=\"center\">File does not exist.</h2>")) != string::npos)
 		return true;
 	else
 		return false;
 }
 
-bool MathildaUtils::is_http_uri(const char *l) {
-	std::string link(l);
-
+bool MathildaUtils::is_http_uri(std::string const &l) {
 	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
 	//return std::regex_match(link, e);
 
-	if(link.substr(0, 7) == "http://")
+	if(l.substr(0, 7) == "http://")
 		return true;
 	else
 		return false;
 }
 
-bool MathildaUtils::is_https_uri(const char *l) {
-	std::string link(l);
-
+bool MathildaUtils::is_https_uri(std::string const &l) {
 	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
 	//return std::regex_match(link, e);
 
-	if(link.substr(0, 8) == "https://")
+	if(l.substr(0, 8) == "https://")
 		return true;
 	else
 		return false;
 }
 
-bool MathildaUtils::is_domain_host(const char *domain, const char *l) {
-	std::string link(l);
-
+bool MathildaUtils::is_domain_host(std::string const &domain, std::string const &l) {
 	//std::regex e(".*\\.example.com.*");
 	//return std::regex_match(link, e);
 
-	if(link.find(domain) != string::npos)
+	std::string d = MathildaUtils::extract_host_from_url(l);
+
+	if(d.find(domain) != string::npos)
 		return true;
 	else
 		return false;
 }
 
-std::string MathildaUtils::extract_host_from_url(const char *l) {
-	std::string link(l);
-
+std::string MathildaUtils::extract_host_from_url(std::string const &l) {
 	if((MathildaUtils::is_http_uri(l)) == true) {
-		std::string t = link.substr(strlen("http://"), link.size());
+		std::string t = l.substr(strlen("http://"), l.size());
 		int e = t.find('/');
 		return t.substr(0, e);
 	}
 
 	if((MathildaUtils::is_https_uri(l)) == true) {
-		std::string t = link.substr(strlen("https://"), link.size());
+		std::string t = l.substr(strlen("https://"), l.size());
 		int e = t.find('/');
 		return t.substr(0, e);
 	}
 
-	int e = link.find("/");
-	return link.substr(0, e);
+	int e = l.find("/");
+	return l.substr(0, e);
 }
 
-std::string MathildaUtils::extract_page_from_url(const char *l) {
-	std::string link(l);
-
-	std::string t;
+std::string MathildaUtils::extract_path_from_url(std::string const &l) {
+	std::string t(l);
 
 	if((MathildaUtils::is_http_uri(l)) == true) {
-		t = link.substr(strlen("http://"), link.size());
+		t = l.substr(strlen("http://"), l.size());
 	}
 
 	if((MathildaUtils::is_https_uri(l)) == true) {
-		t = link.substr(strlen("https://"), link.size());
+		t = l.substr(strlen("https://"), l.size());
 	}
 
 	int e = t.find('/');
 	return t.substr(e, t.size());
+}
+
+int MathildaUtils::name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) {
+	char buf[INET6_ADDRSTRLEN];
+	struct addrinfo *result = NULL, *res = NULL;
+    struct addrinfo hints;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = 0;
+
+	int ret;
+
+	ret = getaddrinfo(l.c_str(), NULL, &hints, &result);
+
+	if(ret != OK) {
+		return ERR;
+	}
+
+	if(fast == true && result) {
+	    freeaddrinfo(result);
+		return OK;
+	} else if(fast == true && result == NULL) {
+		return ERR;
+	}
+
+	for(res = result; res != NULL; res = res->ai_next) {
+		inet_ntop(res->ai_family, &((struct sockaddr_in *)res->ai_addr)->sin_addr, buf, sizeof(buf)-1);
+		out.push_back(buf);
+	}
+
+    freeaddrinfo(result);
+
+    return OK;
 }
 
 #ifdef MATHILDA_TESTING
@@ -476,13 +496,24 @@ void my_finish(uint8_t *sm) {
 }
 
 int main(int argc, char *argv[]) {
-	bool ret;
+	bool ret = 0;
+	int iret = 0;
+
+	std::vector<std::string> out;
+	iret = MathildaUtils::name_to_addr("www.yahoo.com", out, false);
+
+	for(auto j : out) {
+		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
+	}
+
+	iret = MathildaUtils::name_to_addr("aaaaaaa.yahoo.com", out, true);
+	printf("name_to_addr(aaaaaaa.yahoo.com) = %d\n", iret);
 
 	std::string host = MathildaUtils::extract_host_from_url("http://example.test.example.com/something/");
 	printf("extract_host_from_url(http://example.test.example.com/something) = %s\n", host.c_str());
 
-	std::string page = MathildaUtils::extract_page_from_url("http://example.test.example.com/something/test.php");
-	printf("extract_page_from_url(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
+	std::string page = MathildaUtils::extract_path_from_url("http://example.test.example.com/something/test.php");
+	printf("extract_path_from_url(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
 
 	ret = MathildaUtils::is_domain_host(".example.com", "/example");
 	printf("is_domain_host('/example') | ret = %d\n", ret);
