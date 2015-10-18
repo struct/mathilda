@@ -388,20 +388,22 @@ bool MathildaUtils::is_http_uri(std::string const &l) {
 	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
 	//return std::regex_match(link, e);
 
-	if(l.substr(0, 7) == "http://")
+	if(l.substr(0, 7) == "http://") {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 bool MathildaUtils::is_https_uri(std::string const &l) {
 	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
 	//return std::regex_match(link, e);
 
-	if(l.substr(0, 8) == "https://")
+	if(l.substr(0, 8) == "https://") {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 bool MathildaUtils::is_domain_host(std::string const &domain, std::string const &l) {
@@ -410,10 +412,11 @@ bool MathildaUtils::is_domain_host(std::string const &domain, std::string const 
 
 	std::string d = MathildaUtils::extract_host_from_url(l);
 
-	if(d.find(domain) != string::npos)
+	if(d.find(domain) != string::npos) {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 std::string MathildaUtils::extract_host_from_url(std::string const &l) {
@@ -466,7 +469,7 @@ int MathildaUtils::name_to_addr(std::string const &l, std::vector<std::string> &
 	}
 
 	if(fast == true && result) {
-	    freeaddrinfo(result);
+		freeaddrinfo(result);
 		return OK;
 	} else if(fast == true && result == NULL) {
 		return ERR;
