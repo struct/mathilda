@@ -24,7 +24,7 @@
 
 using namespace std;
 
-#define MATHILDA_LIB_VERSION 1.0
+#define MATHILDA_LIB_VERSION 1.2
 #define NUM_PROCS 24
 #define OK 0
 #define ERR -1
