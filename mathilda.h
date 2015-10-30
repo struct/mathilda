@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <curl/curl.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -24,8 +25,7 @@
 
 using namespace std;
 
-#define MATHILDA_LIB_VERSION 1.2
-#define NUM_PROCS 24
+#define MATHILDA_LIB_VERSION 1.3
 #define OK 0
 #define ERR -1
 #define ONE_MB 31250*32
@@ -36,6 +36,8 @@ struct Response {
 	char *text;
 	size_t size;
 };
+
+class Mathilda;
 
 class Instruction {
 public:
@@ -56,6 +58,7 @@ public:
 		after = NULL;
 		response.text = NULL;
 		response.size = 0;
+		mathilda = NULL;
 	}
 
 	Instruction(std::string h, std::string p) {
@@ -84,12 +87,14 @@ public:
 	CURLcode curl_code;
 	std::function<void (Instruction *, CURL *)> before;
 	std::function<void (Instruction *, CURL *, Response *)> after;
+	Mathilda *mathilda;
 };
 
-typedef struct Process_shm {
+typedef struct Process_Info {
 	pid_t proc_pid;
+	int shm_id;
 	uint8_t *shm_ptr;
-} Process_shm;
+} Process_Info;
 
 // Static utility methods for common routines
 class MathildaUtils {
@@ -108,8 +113,8 @@ public:
 
 class Mathilda {
 public:
-	Mathilda() : use_shm(false), safe_to_fork(false), shm_id(0), proc_num(0), shm_sz(ONE_MB), 
-				shm_ptr(NULL), loop(NULL), multi_handle(NULL) {
+	Mathilda() : use_shm(false), safe_to_fork(false), shm_id(0), proc_num(0), shm_sz(ONE_MB*4), 
+				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30) {
 		memset(&timeout, 0x0, sizeof(uv_timer_t));
 	}
 
@@ -123,18 +128,23 @@ public:
 	void setup_uv();
 	int execute_instructions();
 	int create_worker_processes();
+	int get_shm_id();
+	uint8_t *get_shm_ptr();
 
 	bool use_shm;
 	bool safe_to_fork;
-	int shm_id;
 	int proc_num;
+	uint32_t timeout_seconds;
 	uint32_t shm_sz;
-	uint8_t *shm_ptr;
 	std::vector<Instruction *> instructions;
 	uv_loop_t *loop;
 	uv_timer_t timeout;
 	CURLM *multi_handle;
 	std::function<void (uint8_t *s)> finish;
+
+private:
+	int shm_id;
+	uint8_t *shm_ptr;
 };
 
 class Socket_Info {

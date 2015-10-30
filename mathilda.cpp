@@ -6,6 +6,7 @@
 #include "mathilda.h"
 
 void Mathilda::add_instruction(Instruction *i) {
+	i->mathilda = this;
 	instructions.push_back(i);
 }
 
@@ -22,6 +23,14 @@ int Mathilda::execute_instructions() {
 	return OK;
 }
 
+int Mathilda::get_shm_id() {
+	return this->shm_id;
+}
+
+uint8_t *Mathilda::get_shm_ptr() {
+	return (uint8_t *) shmat(this->shm_id, 0, 0);
+}
+
 int Mathilda::create_worker_processes() {
 	uint32_t num_cores = MathildaUtils::count_cores();
 
@@ -32,7 +41,7 @@ int Mathilda::create_worker_processes() {
 	int status = 0;
 	int signl = 0;
 	int ret_code = 0;
-	vector<Process_shm> shm;
+	std::vector<Process_Info> pi;
 
 	pid_t p = 0;
 
@@ -40,7 +49,18 @@ int Mathilda::create_worker_processes() {
 		for(uint32_t proc_num = 0; proc_num < num_cores+1; proc_num++) {
 			if(use_shm) {
 				shmid = shmget(IPC_PRIVATE, shm_sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+
+				if(shmid == ERR) {
+					fprintf(stderr, "[Mathilda] Could not allocate shared memory, hard failure!\n(%s)\n", strerror(errno));
+					abort();
+				}
+
 				shm_ptr = (uint8_t *) shmat(shmid, 0, 0);
+
+				if(shm_ptr == (void *) ERR) {
+					fprintf(stderr, "[Mathilda] Could not get handle to shared memory, hard failure!\n(%s)\n", strerror(errno));
+					abort();
+				}
 			}
 
 			p = fork();
@@ -56,16 +76,33 @@ int Mathilda::create_worker_processes() {
 				start = sz_of_work * proc_num;
 
 				end = start + sz_of_work;
+
+				alarm(timeout_seconds);
+
 				mathilda_proc_init(proc_num, start, end, sz_of_work);
 				exit(OK);
 			}
 
-			shm.push_back({p, shm_ptr});
+			Process_Info p_i;
+
+			memset(&p_i, 0x0, sizeof(Process_Info));
+
+			p_i.proc_pid = p;
+
+			if(use_shm) {
+				p_i.shm_id = shm_id;
+				this->shm_id = shm_id;
+				p_i.shm_ptr = shm_ptr;
+				this->shm_ptr = shm_ptr;
+			}
+
+			pi.push_back(p_i);
 		}
 
 		while((p = waitpid(-1, &status, 0))) {
-			if(errno == ECHILD)
+			if(errno == ECHILD) {
 				break;
+			}
 
 			ret_code = WEXITSTATUS(status);
 
@@ -73,10 +110,12 @@ int Mathilda::create_worker_processes() {
 #ifdef DEBUG
 				fprintf(stdout, "[Mathilda Debug] Child %d exited normally with return code %d\n", p, ret_code);
 #endif
+				// Child exited normally, call finish()
 				if(finish) {
-					for(auto x : shm) {
-						if(x.proc_pid == p)
-							finish(x.shm_ptr);
+					for(auto x : pi) {
+						if(x.proc_pid == p) {
+							finish(get_shm_ptr()));
+						}
 					}
 				}
 			}
@@ -91,6 +130,26 @@ int Mathilda::create_worker_processes() {
 					fprintf(stdout, "[Mathilda Debug] Child %d core dumped\n", p);
 #endif
 				}
+
+				// This process probably timed out. Use
+				// kill so we don't get a zombie process
+				if(signl == SIGALRM) {
+#ifdef DEBUG
+					fprintf(stdout, "[Mathilda Debug] Child %d likely timed out\n", p);
+#endif	
+				}
+
+				// Although the child was terminated by
+				// a signal there is still the chance
+				// there is data in shared memory so
+				// we call finish() to retrieve
+				if(finish) {
+					for(auto x : pi) {
+						if(x.proc_pid == p) {
+							finish(get_shm_ptr());
+						}
+					}
+				}
 			}
 
 			if(WIFSTOPPED(status)) {
@@ -101,18 +160,39 @@ int Mathilda::create_worker_processes() {
 			}
 		}
 	} else {
+		// No children were forked
 		mathilda_proc_init(0, 0, instructions.size(), instructions.size());
 
-		if(finish)
+		if(finish) {
 			finish(NULL);
+		}
 	}
 
 	if(use_shm) {
-		for(auto s : shm) {
-			shmdt(s.shm_ptr);
+		for(auto s : pi) {
+
+			int ret;
+
+			if(s.shm_id == 0) {
+				continue;
+			}
+
+			ret = shmctl(s.shm_id, IPC_RMID, NULL);
+
+			if(ret == ERR) {
+				fprintf(stderr, "[Mathilda] Failed to free shared memory (%d), hard failure!\n(%s)\n", s.shm_id, strerror(errno));
+				abort();
+			}
+
+			ret = shmdt(s.shm_ptr);
+
+			if(ret == ERR) {
+				fprintf(stderr, "[Mathilda] Failed to detach shared memory, hard failure!\n(%s)\n", strerror(errno));
+				abort();
+			}
 		}
 
-		shm.clear();
+		pi.clear();
 	}
 
 	return OK;
@@ -141,8 +221,9 @@ void check_multi_info(Mathilda *m) {
 
 			i->curl_code = msg->data.result;
 
-			if((response_code == i->response_code || i->response_code == 0) && i->after)
+			if((response_code == i->response_code || i->response_code == 0) && i->after) {
 				i->after(i, i->easy, &i->response);
+			}
 
 			if(i->response.text) {
 				free(i->response.text);
@@ -157,7 +238,7 @@ void check_multi_info(Mathilda *m) {
 	}
 }
 
-void on_timeout(uv_timer_t *req, int status) {
+void on_timeout(uv_timer_t *req) {
 	int running_handles;
 	Mathilda *m = (Mathilda *) req->data;
 	curl_multi_socket_action(m->multi_handle, CURL_SOCKET_TIMEOUT, 0, &running_handles);
@@ -287,7 +368,6 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		curl_easy_setopt(i->easy, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(i->easy, CURLOPT_PORT, i->port);
 		curl_easy_setopt(i->easy, CURLOPT_SSL_VERIFYPEER, false);
-		curl_easy_setopt(i->easy, CURLOPT_TIMEOUT, 0);
 		curl_easy_setopt(i->easy, CURLOPT_PRIVATE, i);
 
 	    if(i->before)

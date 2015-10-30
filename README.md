@@ -10,6 +10,8 @@ Mathilda is a multi-process libcurl/libuv wrapper written in C++11. Mathilda all
 
 Using these classes you can write tools that work quickly against a very large set of hosts. Some good examples are command injection crawlers, XXE exploits, SSRF, or HTTP header discovery tools.
 
+Mathilda is not a singleton, you can have multiple Mathilda class instances in your program.
+
 ## Why
 
 The libcurl API is good, but I needed something that wrapped all the plumbing code you normally rewrite with each new command line web testing tool. Mathilda is a library that handles all of that for you. All you have to do is focus on writing the code that defines the requests and does something with the responses. All of this will be automatically distributed for you across a pool of worker processes that invoke your callbacks. I have benchmarked it at about 10k HTTP GET requests per second on a 24 core system.
@@ -32,12 +34,14 @@ If you don't see a function documented here then it isn't intended for tool/exte
 	* add_instruction(Instruction *) - Adds an Instruction class to an internally managed vector
 	* execute_instructions() - Instructs Mathilda to start scanning hosts
 	* clear_instructions() - Clears the instructions vector Mathilda holds, rarely used
+	* get_shm_id() - Returns an int which represents the shared memory ID (called from a child process)
+	* get_shm_ptr() - Returns a uint8_t pointer to the shared memory segment (called from a child process)
 
 ### Mathilda class members
 	* safe_to_fork - A bool flag indicating whether it is OK to fork (default: false)
-	* use_shm - A bool flag indicating whether shared memory segments should be setup (see docs for usage)
-	* shm_id - An integer containing the shared memory ID for this child process
-	* finish(uint8_t *) - Callback function pointer, executed when finished. Passed a pointer to shared memory
+	* use_shm - A bool flag indicating whether shared memory segments should be allocated 
+	* timeout_seconds - The number of seconds a child process should be given before a SIGALRM is sent
+	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 
 ### Mathilda class misc
 	* MATHILDA_FORK - Environment variable that when set tells Mathilda it is OK to fork
@@ -47,19 +51,12 @@ If you don't see a function documented here then it isn't intended for tool/exte
 In each of these calls d is a domain and l is a link. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
 
 	* bool link_blacklist(std::string const &l) - Compares a link against a known blacklist of links
-
 	* bool page_blacklist(std::string const &l) - Compares a page against a known blacklist of 404 pages
-
 	* bool is_http_uri(std::string const &l) - Returns true if your link is an http/http URI
-
 	* bool is_subdomain(std::string const &l) - Returns true if the link is to a subdomain
-
 	* bool is_domain_host(std::string const &d, std::string const &l) - Returns true if the link is to domain host d
-
 	* std::string extract_host_from_url(std::string const &l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
-
 	* std::string extract_path_from_url(std::string const &l) - Returns /test/index.php from http://test.y.example.com/test/index.php
-
 	* int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) - Performs a synchronous name to addr DNS lookup. If fast is true it returns immediately, otherwise the out vector is populated with the results. Returns OK/ERR
 
 ### Instruction class members
@@ -121,7 +118,7 @@ Inside of every Instruction object is a pointer to a [Curl Easy object](http://c
 
 ### Using Shared Memory
 
-The Shared Memory segment is perhaps the most complex part of Mathilda. It is %100 OPTIONAL, but can be helpful when collecting results across multiple processes that would otherwise be lost. Before fork is called, each Mathilda shm_id and shm_ptr member variable is updated to point to a shared memory segment created just for that child process. In order to use this functionality the use_shm flag must be set to true when you create your Mathilda class instance.
+The Shared Memory segment is perhaps the most complex part of Mathilda. It is %100 optional, but can be helpful when collecting results across multiple processes that would otherwise be lost. Before fork is called, each Mathilda shm_id and shm_ptr member variable is updated to point to a shared memory segment created just for that child process. In order to use this functionality the use_shm flag must be set to true when you create your Mathilda class instance. By default you get 4MB of shared memory allocated for each child process.
 
 You can use this shared memory to store anything, and then access it later using the finish callback which is invoked after all child processes have exited.
 
