@@ -28,7 +28,7 @@ int Mathilda::get_shm_id() {
 }
 
 uint8_t *Mathilda::get_shm_ptr() {
-	return (uint8_t *) shmat(this->shm_id, 0, 0);
+	return (uint8_t *) this->shm_ptr;
 }
 
 int Mathilda::create_worker_processes() {
@@ -61,6 +61,8 @@ int Mathilda::create_worker_processes() {
 					fprintf(stderr, "[Mathilda] Could not get handle to shared memory, hard failure!\n(%s)\n", strerror(errno));
 					abort();
 				}
+
+				this->shm_id = shmid;
 			}
 
 			p = fork();
@@ -71,6 +73,9 @@ int Mathilda::create_worker_processes() {
 #endif
 			} else if(p == 0) {
 				uint32_t start, end, sz_of_work;
+
+				// Connect the shm in the child process
+				this->shm_ptr = (uint8_t *) shmat(this->shm_id, 0, 0);
 
 				sz_of_work = instructions.size() / num_cores;
 				start = sz_of_work * proc_num;
@@ -91,9 +96,7 @@ int Mathilda::create_worker_processes() {
 
 			if(use_shm) {
 				p_i.shm_id = shm_id;
-				this->shm_id = shm_id;
 				p_i.shm_ptr = shm_ptr;
-				this->shm_ptr = shm_ptr;
 			}
 
 			pi.push_back(p_i);
@@ -114,7 +117,7 @@ int Mathilda::create_worker_processes() {
 				if(finish) {
 					for(auto x : pi) {
 						if(x.proc_pid == p) {
-							finish(get_shm_ptr()));
+							finish(x.shm_ptr);
 						}
 					}
 				}
@@ -146,7 +149,7 @@ int Mathilda::create_worker_processes() {
 				if(finish) {
 					for(auto x : pi) {
 						if(x.proc_pid == p) {
-							finish(get_shm_ptr());
+							finish(x.shm_ptr);
 						}
 					}
 				}
