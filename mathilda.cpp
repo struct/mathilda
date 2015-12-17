@@ -401,7 +401,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		}
 
 #ifdef DEBUG
-		fprintf(stdout, "[LibMathilda (%d)] Making HTTP %s request to %s\n", i->http_method, proc_num, url.c_str());
+		fprintf(stdout, "[LibMathilda (%d)] Making HTTP %s request to %s\n", proc_num, i->http_method.c_str(), url.c_str());
 
 		if(i->use_proxy == true) {
 			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", proc_num, i->proxy.c_str(), i->proxy_port);
