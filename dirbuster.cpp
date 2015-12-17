@@ -25,7 +25,7 @@ vector<std::string> read_file(char *f) {
 
 // This only executes if we get a 200 OK
 int dirbuster_after(Instruction *i, CURL *c, Response *r) {
-	fprintf(stdout, "Found %s %s\n", i->host.c_str(), i->path.c_str());
+	fprintf(stdout, "Found %s %s %s\n", i->host.c_str(), i->path.c_str(), i->http_method.c_str());
 	return OK;
 }
 
