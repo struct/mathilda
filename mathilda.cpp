@@ -657,16 +657,16 @@ int main(int argc, char *argv[]) {
 	fprintf(stdout, "extract_path_from_url(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
 
 	ret = MathildaUtils::is_domain_host(".example.com", "/example");
-	fprintf(stdout, "is_domain_host('/example') | ret = %d\n", ret);
+	fprintf(stdout, "is_domain_host(example.com, /example) | ret = %d\n", ret);
 
 	ret = MathildaUtils::is_domain_host(".example.com", "http://www.example.com");
-	fprintf(stdout, "is_domain_host('http://www.example.com') | ret = %d\n", ret);
+	fprintf(stdout, "is_domain_host(http://www.example.com, http://www.example.com) | ret = %d\n", ret);
 
 	ret = MathildaUtils::is_domain_host(".example.com", "http://sports.exampleaaa.com");
-	fprintf(stdout, "is_domain_host('http://http://sports.exampleaaa.com') | ret = %d\n", ret);
+	fprintf(stdout, "is_domain_host(.example.com, http://sports.exampleaaa.com) | ret = %d\n", ret);
 
 	ret = MathildaUtils::is_domain_host(".example.com", "http://example.test.something.com/index.html");
-	fprintf(stdout, "is_domain_host('http://example.test.something.com/index.html') | ret = %d\n", ret);
+	fprintf(stdout, "is_domain_host(.example.com, http://example.test.something.com/index.html) | ret = %d\n", ret);
 
 	ret = MathildaUtils::is_subdomain("a.b.example.com");
 	fprintf(stdout, "is_subdomain(a.b.example.com) | ret = %d\n", ret);
