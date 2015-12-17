@@ -61,8 +61,8 @@ public:
 		mathilda = NULL;
 	}
 
-	Instruction(std::string h, std::string p) {
-		Instruction(h.c_str(), p.c_str());
+	Instruction(std::string const &h, std::string const &p) {
+		Instruction((char *) h.c_str(), (char *) p.c_str());
 	}
 
 	// There is no object destruction required
@@ -108,6 +108,7 @@ public:
 	static bool is_domain_host(std::string const &domain, std::string const &l);
 	static std::string extract_host_from_url(std::string const &l);
 	static std::string extract_path_from_url(std::string const &l);
+	static std::string normalize_url(std::string const &l);
 	static int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast);
 };
 

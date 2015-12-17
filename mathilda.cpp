@@ -65,6 +65,15 @@ int Mathilda::create_worker_processes() {
 				this->shm_id = shmid;
 			}
 
+			Process_Info p_i;
+
+			memset(&p_i, 0x0, sizeof(Process_Info));
+
+			if(use_shm) {
+				p_i.shm_id = shm_id;
+				p_i.shm_ptr = shm_ptr;
+			}
+
 			p = fork();
 
 			if(p == ERR) {
@@ -88,17 +97,7 @@ int Mathilda::create_worker_processes() {
 				exit(OK);
 			}
 
-			Process_Info p_i;
-
-			memset(&p_i, 0x0, sizeof(Process_Info));
-
 			p_i.proc_pid = p;
-
-			if(use_shm) {
-				p_i.shm_id = shm_id;
-				p_i.shm_ptr = shm_ptr;
-			}
-
 			pi.push_back(p_i);
 		}
 
@@ -344,16 +343,40 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		curl_easy_setopt(i->easy, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 
+		curl_easy_setopt(i->easy, CURLOPT_CUSTOMREQUEST, i->http_method.c_str());
+
+		curl_easy_setopt(i->easy, CURLOPT_HTTPGET, 0);
+		curl_easy_setopt(i->easy, CURLOPT_POST, 0);
+		curl_easy_setopt(i->easy, CURLOPT_NOBODY, 0);
+		curl_easy_setopt(i->easy, CURLOPT_UPLOAD, 0);
+
+		if(i->http_method == "GET") {
+			curl_easy_setopt(i->easy, CURLOPT_HTTPGET, 1);
+		}
+
 		if(i->http_method == "POST") {
 			curl_easy_setopt(i->easy, CURLOPT_POST, 1);
 			curl_easy_setopt(i->easy, CURLOPT_POSTFIELDS, i->post_body.c_str());
 		}
 
-		if(i->follow_redirects)
-			curl_easy_setopt(i->easy, CURLOPT_FOLLOWLOCATION, 1);
+		if(i->http_method == "HEAD") {
+			 curl_easy_setopt(i->easy, CURLOPT_NOBODY, 1);
+		}
 
-		if(i->cookie_file != "")
+		// There are some internal libcurl bugs that
+		// lead to crashes when setting this option.
+		// You can still set http_method to 'PUT'
+		//if(i->http_method == "PUT") {
+		//	 curl_easy_setopt(i->easy, CURLOPT_UPLOAD, 1);
+		//}
+
+		if(i->follow_redirects) {
+			curl_easy_setopt(i->easy, CURLOPT_FOLLOWLOCATION, 1);
+		}
+
+		if(i->cookie_file != "") {
 			curl_easy_setopt(i->easy, CURLOPT_COOKIEFILE, i->cookie_file.c_str());
+		}
 
 		i->response.text = NULL;
 		i->response.size = 0;
@@ -373,11 +396,12 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		curl_easy_setopt(i->easy, CURLOPT_SSL_VERIFYPEER, false);
 		curl_easy_setopt(i->easy, CURLOPT_PRIVATE, i);
 
-	    if(i->before)
+		if(i->before) {
 		    i->before(i, i->easy);
+		}
 
 #ifdef DEBUG
-		fprintf(stdout, "[LibMathilda (%d)] Making HTTP request: %s\n", proc_num, url.c_str());
+		fprintf(stdout, "[LibMathilda (%d)] Making HTTP %s request to %s\n", i->http_method, proc_num, url.c_str());
 
 		if(i->use_proxy == true) {
 			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", proc_num, i->proxy.c_str(), i->proxy_port);
@@ -531,6 +555,11 @@ std::string MathildaUtils::extract_path_from_url(std::string const &l) {
 	}
 
 	int e = t.find('/');
+
+	if(e == ERR) {
+		return "";
+	}
+
 	return t.substr(e, t.size());
 }
 
@@ -568,9 +597,28 @@ int MathildaUtils::name_to_addr(std::string const &l, std::vector<std::string> &
     return OK;
 }
 
+std::string MathildaUtils::normalize_url(std::string const &l) {
+	std::string prepend = "http://";
+	std::string tmp;
+
+	if((MathildaUtils::is_http_uri(l)) == true) {
+		prepend = "https://";
+	}
+
+	tmp = l.substr(prepend.size()-1, l.size());
+
+	while((tmp.find("//")) != ERR) {
+		tmp.replace(tmp.find("//"), 2, "/");
+	}
+
+	tmp = prepend + tmp;
+
+	return tmp;
+}
+
 #ifdef MATHILDA_TESTING
 void my_before(Instruction *i, CURL *c) {
-	//curl_easy_setopt(c, CURLOPT_USERAGENT, "some user agent");
+	//curl_easy_setopt(c, CURLOPT_USERAGENT, "your user agent");
 }
 
 void my_after(Instruction *i, CURL *c, Response *r) {
@@ -591,6 +639,9 @@ int main(int argc, char *argv[]) {
 	for(auto j : out) {
 		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
 	}
+
+	std::string url = MathildaUtils::normalize_url("http://www.yahoo.com/test//dir//a");
+	printf("http://www.yahoo.com/test//dir//a = %s\n", url.c_str());
 
 	iret = MathildaUtils::name_to_addr("aaaaaaa.yahoo.com", out, true);
 	printf("name_to_addr(aaaaaaa.yahoo.com) = %d\n", iret);
