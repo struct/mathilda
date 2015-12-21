@@ -1,7 +1,7 @@
 // Copyright 2015 Yahoo Inc.
 // Licensed under the BSD license, see LICENSE file for terms.
 // Written by Chris Rohlf
-// Mathilda - Beta quality class for making web requests
+// Mathilda - (Beta) A library for making web tools that scale
 
 #include "mathilda.h"
 
@@ -15,8 +15,9 @@ void Mathilda::clear_instructions() {
 }
 
 int Mathilda::execute_instructions() {
-	if((curl_global_init(CURL_GLOBAL_ALL)) != CURLE_OK)
+	if((curl_global_init(CURL_GLOBAL_ALL)) != CURLE_OK) {
 		return ERR;
+	}
 
 	create_worker_processes();
 
@@ -34,8 +35,12 @@ uint8_t *Mathilda::get_shm_ptr() {
 int Mathilda::create_worker_processes() {
 	uint32_t num_cores = MathildaUtils::count_cores();
 
-	if(instructions.size() < num_cores)
+	bool should_fork = safe_to_fork;
+
+	if(instructions.size() < num_cores) {
 		num_cores = 1;
+		should_fork = false;
+	}
 
 	int shmid = 0;
 	int status = 0;
@@ -45,7 +50,7 @@ int Mathilda::create_worker_processes() {
 
 	pid_t p = 0;
 
-	if(safe_to_fork == true || getenv("MATHILDA_FORK")) {
+	if((safe_to_fork == true || getenv("MATHILDA_FORK")) && should_fork == true) {
 		for(uint32_t proc_num = 0; proc_num < num_cores+1; proc_num++) {
 			if(use_shm) {
 				shmid = shmget(IPC_PRIVATE, shm_sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
@@ -233,7 +238,8 @@ void check_multi_info(Mathilda *m) {
 			}
 
 			curl_multi_remove_handle(m->multi_handle, i->easy);
-			curl_easy_cleanup(i->easy);
+			curl_easy_reset(i->easy);
+			m->easy_handles.push_back(i->easy);
 			delete i;
 			i = NULL;
 		}
@@ -248,8 +254,9 @@ void on_timeout(uv_timer_t *req) {
 }
 
 void start_timeout(CURLM *multi, uint64_t timeout_ms, void *userp) {
-	if(timeout_ms <= 0)
+	if(timeout_ms <= 0) {
 		timeout_ms = 1;
+	}
 
 	Mathilda *m = (Mathilda *) userp;
 	m->timeout.data = m;
@@ -310,14 +317,18 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 	this->proc_num = proc_num;
 
-	if(end > instructions.size())
+	if(end > instructions.size()) {
 		end = instructions.size();
+	}
 
 	setup_uv();
 
 	std::vector<Instruction *>::const_iterator it;
 
-	multi_handle = curl_multi_init();
+	if(multi_handle == NULL) {
+		multi_handle = curl_multi_init();
+	}
+
 	curl_multi_setopt(multi_handle, CURLMOPT_SOCKETFUNCTION, handle_socket);
 	curl_multi_setopt(multi_handle, CURLMOPT_SOCKETDATA, this);
 	curl_multi_setopt(multi_handle, CURLMOPT_TIMERFUNCTION, start_timeout);
@@ -329,11 +340,13 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		std::string uri = i->ssl ? "https://" : "http://";
 
-		if(i->path[0] != '/')
+		if(i->path[0] != '/') {
 			i->path = "/" + i->path;
+		}
 
-		if(i->path.substr(0,2) == "//")
+		if(i->path.substr(0,2) == "//") {
 			i->path = i->path.substr(1, i->path.size());
+		}
 
 #ifdef DEBUG
 		fprintf(stdout, "[LibMathilda (%d)] uri=[%s] host=[%s] path=[%s]\n", proc_num, uri.c_str(), i->host.c_str(), i->path.c_str());
@@ -341,14 +354,16 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		std::string url = uri + i->host + i->path;
 
+		if(easy_handles.size() == 0) {
+			i->easy = curl_easy_init();
+		} else {
+			i->easy = easy_handles.back();
+			easy_handles.pop_back();
+		}
+
 		curl_easy_setopt(i->easy, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 
 		curl_easy_setopt(i->easy, CURLOPT_CUSTOMREQUEST, i->http_method.c_str());
-
-		curl_easy_setopt(i->easy, CURLOPT_HTTPGET, 0);
-		curl_easy_setopt(i->easy, CURLOPT_POST, 0);
-		curl_easy_setopt(i->easy, CURLOPT_NOBODY, 0);
-		curl_easy_setopt(i->easy, CURLOPT_UPLOAD, 0);
 
 		if(i->http_method == "GET") {
 			curl_easy_setopt(i->easy, CURLOPT_HTTPGET, 1);
@@ -415,20 +430,21 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 	}
 
 	uv_run(loop, UV_RUN_DEFAULT);
-	curl_multi_cleanup(multi_handle);
 }
 
 static size_t _curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
 	size_t realsize = size * nmemb;
 	struct Response *mem = (struct Response *)userp;
 
-	if(mem == NULL)
+	if(mem == NULL) {
 		return ERR;
+	}
 
 	mem->text = (char *) realloc(mem->text, mem->size + realsize + 1);
 
-	if(mem->text == NULL)
+	if(mem->text == NULL) {
 		return ERR;
+	}
 
 	memcpy(&(mem->text[mem->size]), contents, realsize);
 	mem->size += realsize;
@@ -446,14 +462,17 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 
 	uv_timer_stop(&m->timeout);
 
-	if(status < 0)
+	if(status < 0) {
 		flags = CURL_CSELECT_ERR;
+	}
 
-	if(!status && events & UV_READABLE)
+	if(!status && events & UV_READABLE) {
 		flags |= CURL_CSELECT_IN;
+	}
 
-	if(!status && events & UV_WRITABLE)
+	if(!status && events & UV_WRITABLE) {
 		flags |= CURL_CSELECT_OUT;
+	}
 
 	curl_multi_socket_action(m->multi_handle, s->sock_fd, flags, &running_handles);
 	check_multi_info(m);
@@ -462,21 +481,24 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 }
 
 bool MathildaUtils::is_subdomain(std::string const &l) {
-	if((std::count(l.begin(), l.end(), '.')) < 3)
+	if((std::count(l.begin(), l.end(), '.')) < 3) {
 		return true;
+	}
 
 	return false;
 }
 
 bool MathildaUtils::link_blacklist(std::string const &l) {
-	if(l[0] == '#')
+	if(l[0] == '#') {
 		return true;
+	}
 
 	const char *blacklist [] = { "example.com" };
 
 	for(int i=0; i < (sizeof(blacklist) / sizeof(char *)); i++) {
-		if(l.find(blacklist[i]) != ERR)
+		if(l.find(blacklist[i]) != ERR) {
 			return true;
+		}
 	}
 
 	return false;
@@ -485,10 +507,11 @@ bool MathildaUtils::link_blacklist(std::string const &l) {
 bool MathildaUtils::page_blacklist(std::string const &l) {
 	if((l.find("Sorry, the page you requested was not found")) != string::npos
 		|| (l.find("The requested URL was not found on this server")) != string::npos
-		|| (l.find("<h2 align=\"center\">File does not exist.</h2>")) != string::npos)
+		|| (l.find("<h2 align=\"center\">File does not exist.</h2>")) != string::npos) {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 bool MathildaUtils::is_http_uri(std::string const &l) {

@@ -42,7 +42,7 @@ class Mathilda;
 class Instruction {
 public:
 	Instruction(char *h, char *p) {
-		easy = curl_easy_init();
+		easy = NULL;
 		host.assign(h);
 		path.assign(p);
 		http_method.assign("GET");
@@ -120,6 +120,11 @@ public:
 	}
 
 	~Mathilda() {
+		for(auto e : easy_handles) {
+			curl_easy_cleanup(e);
+		}
+
+		curl_multi_cleanup(multi_handle);
 		curl_global_cleanup();
 	};
 
@@ -138,6 +143,7 @@ public:
 	uint32_t timeout_seconds;
 	uint32_t shm_sz;
 	std::vector<Instruction *> instructions;
+	std::vector<CURL *> easy_handles;
 	uv_loop_t *loop;
 	uv_timer_t timeout;
 	CURLM *multi_handle;

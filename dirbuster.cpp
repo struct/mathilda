@@ -37,6 +37,8 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	int count = 0;
+
 	vector <std::string> hosts;
 	hosts = read_file(argv[1]);
 
@@ -63,14 +65,22 @@ int main(int argc, char *argv[]) {
 					i->port = 80;
 					i->response_code = 200;
 					i->http_method = j;
+					count++;
 					m->add_instruction(i);
 				}
 			}
 		}
-	}
+    }
 
 	m->safe_to_fork = true;
 	m->execute_instructions();
 
-	return OK;
+    fprintf(stdout, "Total HTTP Requests %d\n", count);
+    fprintf(stdout, "Total HTTP Requests per host: %d\n", pages.size() * dirs.size() * methods.size());
+    fprintf(stdout, "Total HTTP Methods: %d\n", methods.size());
+    fprintf(stdout, "Hosts: %d\n", hosts.size());
+    fprintf(stdout, "Pages: %d\n", pages.size());
+    fprintf(stdout, "Directories: %d\n", dirs.size());
+
+    return OK;
 }
