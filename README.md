@@ -163,6 +163,7 @@ Written by Chris Rohlf
 
 ## TODO
 
+* Purge all instructions for a hosts that times out on sigalrm
 * An authentication hook for when you have custom SSO requirements
 * post_parameters map is currently unused
 * HTTP2 support (requires libcurl changes)

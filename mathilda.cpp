@@ -35,11 +35,8 @@ uint8_t *Mathilda::get_shm_ptr() {
 int Mathilda::create_worker_processes() {
 	uint32_t num_cores = MathildaUtils::count_cores();
 
-	bool should_fork = safe_to_fork;
-
 	if(instructions.size() < num_cores) {
-		num_cores = 1;
-		should_fork = false;
+		num_cores = instructions.size()-1;
 	}
 
 	int shmid = 0;
@@ -50,7 +47,7 @@ int Mathilda::create_worker_processes() {
 
 	pid_t p = 0;
 
-	if((safe_to_fork == true || getenv("MATHILDA_FORK")) && should_fork == true) {
+	if(safe_to_fork == true || getenv("MATHILDA_FORK")) {
 		for(uint32_t proc_num = 0; proc_num < num_cores+1; proc_num++) {
 			if(use_shm) {
 				shmid = shmget(IPC_PRIVATE, shm_sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
@@ -86,12 +83,17 @@ int Mathilda::create_worker_processes() {
 				fprintf(stdout, "[Mathilda Debug] Failed to fork!\n");
 #endif
 			} else if(p == 0) {
-				uint32_t start, end, sz_of_work;
+				uint32_t start = 0;
+				uint32_t end = 0;
+				uint32_t sz_of_work = instructions.size();
 
 				// Connect the shm in the child process
 				this->shm_ptr = (uint8_t *) shmat(this->shm_id, 0, 0);
 
-				sz_of_work = instructions.size() / num_cores;
+				if(num_cores > 0) {
+					sz_of_work = instructions.size() / num_cores;
+				}
+
 				start = sz_of_work * proc_num;
 
 				end = start + sz_of_work;
@@ -259,9 +261,9 @@ void start_timeout(CURLM *multi, uint64_t timeout_ms, void *userp) {
 	}
 
 	Mathilda *m = (Mathilda *) userp;
-	m->timeout.data = m;
+	m->timeout->data = m;
 
-	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
+	uv_timer_start(m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
 }
 
 void curl_close_cb(uv_handle_t *handle) {
@@ -308,7 +310,7 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 
 void Mathilda::setup_uv() {
 	loop = uv_default_loop();
-	uv_timer_init(loop, &timeout);
+	uv_timer_init(loop, timeout);
 }
 
 void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work) {
@@ -323,16 +325,21 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 	setup_uv();
 
-	std::vector<Instruction *>::const_iterator it;
-
 	if(multi_handle == NULL) {
 		multi_handle = curl_multi_init();
+
+		if(multi_handle == NULL) {
+			fprintf(stdout, "[LibMathilda (%d)] Failed to initialize curl multi handle\n", proc_num);
+			return;
+		}
 	}
 
 	curl_multi_setopt(multi_handle, CURLMOPT_SOCKETFUNCTION, handle_socket);
 	curl_multi_setopt(multi_handle, CURLMOPT_SOCKETDATA, this);
 	curl_multi_setopt(multi_handle, CURLMOPT_TIMERFUNCTION, start_timeout);
 	curl_multi_setopt(multi_handle, CURLMOPT_TIMERDATA, this);
+
+	std::vector<Instruction *>::const_iterator it;
 
 	for(it = instructions.begin()+start; it != instructions.begin()+end; ++it) {
 		Instruction *i = *it;
@@ -362,7 +369,6 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		}
 
 		curl_easy_setopt(i->easy, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-
 		curl_easy_setopt(i->easy, CURLOPT_CUSTOMREQUEST, i->http_method.c_str());
 
 		if(i->http_method == "GET") {
@@ -380,7 +386,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		// There are some internal libcurl bugs that
 		// lead to crashes when setting this option.
-		// You can still set http_method to 'PUT'
+		// You can still set Instruction::http_method to 'PUT'
 		//if(i->http_method == "PUT") {
 		//	 curl_easy_setopt(i->easy, CURLOPT_UPLOAD, 1);
 		//}
@@ -460,7 +466,7 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	Socket_Info *s = (Socket_Info *) si->data;
 	Mathilda *m = (Mathilda *) s->m;
 
-	uv_timer_stop(&m->timeout);
+	uv_timer_stop(m->timeout);
 
 	if(status < 0) {
 		flags = CURL_CSELECT_ERR;
@@ -477,7 +483,7 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	curl_multi_socket_action(m->multi_handle, s->sock_fd, flags, &running_handles);
 	check_multi_info(m);
 
-	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, 0, 0);
+	uv_timer_start(m->timeout, (uv_timer_cb) on_timeout, 0, 0);
 }
 
 bool MathildaUtils::is_subdomain(std::string const &l) {

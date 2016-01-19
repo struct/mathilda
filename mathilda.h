@@ -28,7 +28,7 @@ using namespace std;
 #define MATHILDA_LIB_VERSION 1.3
 #define OK 0
 #define ERR -1
-#define ONE_MB 31250*32
+#define SHM_SIZE 1000000*16
 
 static const char *default_ua = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2049.0 Safari/537.36";
 
@@ -65,7 +65,6 @@ public:
 		Instruction((char *) h.c_str(), (char *) p.c_str());
 	}
 
-	// There is no object destruction required
 	~Instruction() { }
 
 	CURL *easy;
@@ -114,9 +113,15 @@ public:
 
 class Mathilda {
 public:
-	Mathilda() : use_shm(false), safe_to_fork(false), shm_id(0), proc_num(0), shm_sz(ONE_MB*4), 
+	Mathilda() : use_shm(false), safe_to_fork(false), shm_id(0), proc_num(0), shm_sz(SHM_SIZE), 
 				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30) {
-		memset(&timeout, 0x0, sizeof(uv_timer_t));
+		timeout = (uv_timer_t *) malloc(sizeof(uv_timer_t));
+
+		if(timeout == NULL) {
+			fprintf(stdout, "[LibMathilda] Failed to allocate timeout in constructor\n");
+		} else {
+			memset(timeout, 0x0, sizeof(uv_timer_t));
+		}
 	}
 
 	~Mathilda() {
@@ -124,8 +129,17 @@ public:
 			curl_easy_cleanup(e);
 		}
 
-		curl_multi_cleanup(multi_handle);
+		if(multi_handle) {
+			curl_multi_cleanup(multi_handle);
+		}
+
 		curl_global_cleanup();
+		multi_handle = NULL;
+
+		if(timeout) {
+			free(timeout);
+			timeout = NULL;
+		}
 	};
 
 	void add_instruction(Instruction *i);
@@ -145,7 +159,7 @@ public:
 	std::vector<Instruction *> instructions;
 	std::vector<CURL *> easy_handles;
 	uv_loop_t *loop;
-	uv_timer_t timeout;
+	uv_timer_t *timeout;
 	CURLM *multi_handle;
 	std::function<void (uint8_t *s)> finish;
 
