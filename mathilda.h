@@ -113,7 +113,7 @@ public:
 
 class Mathilda {
 public:
-	Mathilda() : use_shm(false), safe_to_fork(false), shm_id(0), proc_num(0), shm_sz(SHM_SIZE), 
+	Mathilda() : use_shm(false), safe_to_fork(true), shm_id(0), proc_num(0), shm_sz(SHM_SIZE), 
 				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30) {
 		timeout = (uv_timer_t *) malloc(sizeof(uv_timer_t));
 

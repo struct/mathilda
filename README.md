@@ -22,7 +22,7 @@ Mathilda takes a list of Instruction class instances. Each Instruction class rep
 
 Depending on the number of cores your system has Mathilda manages a pool of worker processes for efficiently distributing work with an event model implemented by libuv. This design was chosen to minimize the impact that slower servers have on performance. More on that below.
 
-It is important to note that Mathilda calls fork to create the child processes. This is normally a bad choice for library designs but suits our needs perfectly. However this means that you shouldn't call fork from your Mathilda tool and you shouldn't reuse file descriptors from your callbacks unless you really know what you're doing. All of this is covered below in the API documentation.
+It is important to note that Mathilda calls fork to create the child processes. This is normally a bad choice for library designs but suits our needs perfectly. However this means that you probably shouldn't call fork from your Mathilda tool and you shouldn't reuse file descriptors from your callbacks unless you really know what you're doing. All of this is covered below in the API documentation.
 
 A bit of history for you. This code was originally a threadpool but I ran into limitations with using evented IO from threads because nothing is thread safe. You end up having to message a worker thread to safely update timers to avoid race conditions and dead locks. Which quickly becomes very inefficient and complex code. This is true of libuv, libevent, and libev in one form or another. The complexity began to outweigh the performance hit of forking. If you don't care about using and evented IO with libcurl then you can safely use a threadpool and its fast-enough. However you will need to use select with libcurls multi interface, which is older and slower than epoll, which libuv manages for us. In fact theres probably more asynchronous operations we could be using libuv for but aren't yet.
 
@@ -38,8 +38,8 @@ If you don't see a function documented here then it isn't intended for tool/exte
 	* get_shm_ptr() - Returns a uint8_t pointer to the shared memory segment (called from a child process)
 
 ### Mathilda class members
-	* safe_to_fork - A bool flag indicating whether it is OK to fork (default: false)
-	* use_shm - A bool flag indicating whether shared memory segments should be allocated 
+	* safe_to_fork - A bool flag indicating whether it is OK to fork (default: true)
+	* use_shm - A bool flag indicating whether shared memory segments should be allocated (default: false)
 	* timeout_seconds - The number of seconds a child process should be given before a SIGALRM is sent
 	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 
@@ -48,7 +48,7 @@ If you don't see a function documented here then it isn't intended for tool/exte
 
 ### MathildaUtils static class functions
 
-In each of these calls d is a domain and l is a link. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
+In each of these calls d is a TLD and l is a URI. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
 
 	* bool link_blacklist(std::string const &l) - Compares a link against a known blacklist of links
 	* bool page_blacklist(std::string const &l) - Compares a page against a known blacklist of 404 pages
@@ -112,6 +112,8 @@ The before callback executes before the Curl Easy handle is passed to Curl, givi
 The after callback executes once the Curl call is completed and gives you the opportunity to inspect the response headers or content.
 
 The finish callback executes after all child processes have exited and gives you the opportunity to use the shared memory segment before it is destroyed.
+
+Note: If you choose not to fork (i.e. set safe_to_fork to false) and your connection hangs forever then you need to implement the logic to catch and recover from that. All of the neccessary libuv and libcurl handles are available for doing this.
 
 ### Accessing the Curl object
 

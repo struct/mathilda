@@ -309,8 +309,10 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 }
 
 void Mathilda::setup_uv() {
-	loop = uv_default_loop();
-	uv_timer_init(loop, timeout);
+	if(loop == NULL) {
+		loop = uv_default_loop();
+		uv_timer_init(loop, timeout);
+	}
 }
 
 void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work) {
