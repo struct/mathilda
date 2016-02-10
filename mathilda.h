@@ -26,7 +26,7 @@
 
 using namespace std;
 
-#define MATHILDA_LIB_VERSION 1.3
+#define MATHILDA_LIB_VERSION 1.4
 #define OK 0
 #define ERR -1
 #define SHM_SIZE 1000000*16
