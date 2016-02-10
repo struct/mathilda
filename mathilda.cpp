@@ -88,7 +88,7 @@ int Mathilda::create_worker_processes() {
 				uint32_t sz_of_work = instructions.size();
 
 				// Connect the shm in the child process
-				this->shm_ptr = (uint8_t *) shmat(this->shm_id, 0, 0);
+				shm_ptr = (uint8_t *) shmat(shm_id, 0, 0);
 
 				if(num_cores > 0) {
 					sz_of_work = instructions.size() / num_cores;
@@ -97,6 +97,10 @@ int Mathilda::create_worker_processes() {
 				start = sz_of_work * proc_num;
 
 				end = start + sz_of_work;
+
+				if(set_cpu == true) {
+					MathildaUtils::set_affinity(proc_num);
+				}
 
 				alarm(timeout_seconds);
 
@@ -486,6 +490,23 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	check_multi_info(m);
 
 	uv_timer_start(m->timeout, (uv_timer_cb) on_timeout, 0, 0);
+}
+
+// Linux only, won't build elsewhere, but
+// libmathilda is only supported on Linux
+void MathildaUtils::set_affinity(uint32_t c) {
+	cpu_set_t cpus;
+	CPU_ZERO(&cpus);
+	CPU_SET(c, &cpus);
+	int ret = sched_setaffinity(0, sizeof(cpus), &cpus);
+
+#ifdef DEBUG
+	if(ret == ERR) {
+		fprintf(stdout, "[LibMathilda] Failed to bind to CPU %d. Cache invalidation may occur!\n", c);
+	} else {
+		fprintf(stdout, "[LibMathilda] Successfully	bound to CPU %d\n", c);
+	}
+#endif
 }
 
 bool MathildaUtils::is_subdomain(std::string const &l) {

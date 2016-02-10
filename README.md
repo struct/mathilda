@@ -38,8 +38,9 @@ If you don't see a function documented here then it isn't intended for tool/exte
 	* get_shm_ptr() - Returns a uint8_t pointer to the shared memory segment (called from a child process)
 
 ### Mathilda class members
-	* safe_to_fork - A bool flag indicating whether it is OK to fork (default: true)
-	* use_shm - A bool flag indicating whether shared memory segments should be allocated (default: false)
+	* safe_to_fork - A bool indicating whether it is OK to fork (default: true)
+	* use_shm - A bool indicating whether shared memory segments should be allocated (default: false)
+	* set_cpu - A bool that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
 	* timeout_seconds - The number of seconds a child process should be given before a SIGALRM is sent
 	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 

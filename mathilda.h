@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <sched.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <uv.h>
@@ -99,6 +100,7 @@ typedef struct Process_Info {
 class MathildaUtils {
 public:
 	static uint32_t count_cores();
+	static void set_affinity(uint32_t c);
 	static bool link_blacklist(std::string const &l);
 	static bool page_blacklist(std::string const &l);
 	static bool is_http_uri(std::string const &l);
@@ -114,7 +116,7 @@ public:
 class Mathilda {
 public:
 	Mathilda() : use_shm(false), safe_to_fork(true), shm_id(0), proc_num(0), shm_sz(SHM_SIZE), 
-				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30) {
+				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30), set_cpu(true) {
 		timeout = (uv_timer_t *) malloc(sizeof(uv_timer_t));
 
 		if(timeout == NULL) {
@@ -153,6 +155,7 @@ public:
 
 	bool use_shm;
 	bool safe_to_fork;
+	bool set_cpu;
 	int proc_num;
 	uint32_t timeout_seconds;
 	uint32_t shm_sz;
