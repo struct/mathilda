@@ -53,14 +53,14 @@ int Mathilda::create_worker_processes() {
 				shmid = shmget(IPC_PRIVATE, shm_sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
 				if(shmid == ERR) {
-					fprintf(stderr, "[Mathilda] Could not allocate shared memory, hard failure!\n(%s)\n", strerror(errno));
+					fprintf(stderr, "[Mathilda] Could not allocate shared memory. Aborting!\n(%s)\n", strerror(errno));
 					abort();
 				}
 
 				shm_ptr = (uint8_t *) shmat(shmid, 0, 0);
 
 				if(shm_ptr == (void *) ERR) {
-					fprintf(stderr, "[Mathilda] Could not get handle to shared memory, hard failure!\n(%s)\n", strerror(errno));
+					fprintf(stderr, "[Mathilda] Could not get handle to shared memory. Aborting!\n(%s)\n", strerror(errno));
 					abort();
 				}
 
@@ -193,14 +193,14 @@ int Mathilda::create_worker_processes() {
 			ret = shmctl(s.shm_id, IPC_RMID, NULL);
 
 			if(ret == ERR) {
-				fprintf(stderr, "[Mathilda] Failed to free shared memory (%d), hard failure!\n(%s)\n", s.shm_id, strerror(errno));
+				fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s.shm_id, strerror(errno));
 				abort();
 			}
 
 			ret = shmdt(s.shm_ptr);
 
 			if(ret == ERR) {
-				fprintf(stderr, "[Mathilda] Failed to detach shared memory, hard failure!\n(%s)\n", strerror(errno));
+				fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
 				abort();
 			}
 		}
@@ -306,7 +306,8 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 			}
 		break;
 		default:
-		abort();
+			fprintf(stderr, "[LibMathilda (%d)] Unknown libcurl action (%d). Aborting!\n", proc_num, action);
+			abort();
 	}
 
 	return 0;
