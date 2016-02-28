@@ -672,6 +672,18 @@ std::string MathildaUtils::normalize_url(std::string const &l) {
 	return tmp;
 }
 
+void MathildaUtils::get_http_headers(const char *s, std::map<std::string, std::string> &e) {
+	std::stringstream ss(s);
+	std::string item;
+	char *v;
+
+	while (std::getline(ss, item, '\n')) {
+		if(item.find(":") != ERR) {
+			e[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size());
+		}
+	}
+}
+
 #ifdef MATHILDA_TESTING
 void my_before(Instruction *i, CURL *c) {
 	//curl_easy_setopt(c, CURLOPT_USERAGENT, "your user agent");
@@ -694,6 +706,16 @@ int main(int argc, char *argv[]) {
 
 	for(auto j : out) {
 		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
+	}
+
+	const char *HTTP = "200 OK\nX-Test: 1\nX-Hdr: 2\nX-Server: 3\n\r\n";
+	std::map<std::string, std::string> hdrs;
+	MathildaUtils::get_http_headers(HTTP, hdrs);
+
+	fprintf(stdout, "HTTP Headers:\n");
+
+	for(auto const &h : hdrs) {
+		fprintf(stdout, "%s -> %s\n", h.first.c_str(), h.second.c_str());
 	}
 
 	std::string url = MathildaUtils::normalize_url("http://www.yahoo.com/test//dir//a");

@@ -60,6 +60,7 @@ In each of these calls d is a TLD and l is a URI. These utility functions need s
 	* std::string extract_path_from_url(std::string const &l) - Returns /test/index.php from http://test.y.example.com/test/index.php
 	* int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) - Performs a synchronous name to addr DNS lookup. If fast is true it returns immediately, otherwise the out vector is populated with the results. Returns OK/ERR
 	* std::string normalize_url(std::string const &l) - Attempts to normalize a URL for unnecessary /'s
+	* void get_http_headers(const char *s, std::map<std::string, std::string> &e) - Takes a raw HTTP response 's', and fills in a map 'e' with each HTTP header received
 
 ### Instruction class members
 

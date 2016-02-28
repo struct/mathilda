@@ -111,6 +111,7 @@ public:
 	static std::string extract_path_from_url(std::string const &l);
 	static std::string normalize_url(std::string const &l);
 	static int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast);
+	static void get_http_headers(const char *s, std::map<std::string, std::string> &e);
 };
 
 class Mathilda {
