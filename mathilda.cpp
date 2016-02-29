@@ -684,7 +684,7 @@ void MathildaUtils::get_http_headers(const char *s, std::map<std::string, std::s
 	char *v;
 
 	while (std::getline(ss, item, '\n')) {
-		if(item.find("\r\n") == 0) {
+		if(item[0] == '\r') {
 			break;
 		}
 
