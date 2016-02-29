@@ -77,6 +77,7 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* proxy_port (short) - Proxy port to connect to
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
 	* ssl (boolean) - SSL support
+	* include_headers (bool) - Include HTTP headers with the after callback (Response->text will include them)
 	* use_proxy (boolean) - Use the proxy configured with proxy/proxy_port
 	* follow_redirects (boolean) - Follow HTTP redirects
 	* curl_code (CURLCode) - The Curl response code returned after the request is finished

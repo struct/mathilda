@@ -50,6 +50,7 @@ public:
 		user_agent.assign(default_ua);
 		proxy.assign("");
 		ssl = false;
+		include_headers = true;
 		follow_redirects = true;
 		use_proxy = false;
 		port = 80;
@@ -78,6 +79,7 @@ public:
 	std::string proxy;
 	std::map<std::string,std::string> post_parameters; // XXX TODO currently unused
 	bool ssl;
+	bool include_headers;
 	bool follow_redirects;
 	bool use_proxy;
 	uint16_t port;

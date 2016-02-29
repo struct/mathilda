@@ -416,6 +416,11 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		curl_easy_setopt(i->easy, CURLOPT_NOSIGNAL, 1); // do not remove
 		curl_easy_setopt(i->easy, CURLOPT_DNS_CACHE_TIMEOUT, 1);
+
+		if(i->include_headers == true) {
+			curl_easy_setopt(i->easy, CURLOPT_HEADER, 1);
+		}
+
 		curl_easy_setopt(i->easy, CURLOPT_WRITEFUNCTION, _curl_write_callback);
 		curl_easy_setopt(i->easy, CURLOPT_WRITEDATA, &i->response);
 		curl_easy_setopt(i->easy, CURLOPT_USERAGENT, default_ua);
