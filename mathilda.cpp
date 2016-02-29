@@ -306,7 +306,7 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 			}
 		break;
 		default:
-			fprintf(stderr, "[LibMathilda (%d)] Unknown libcurl action (%d). Aborting!\n", proc_num, action);
+			fprintf(stderr, "[LibMathilda (%d)] Unknown libcurl action (%d). Aborting!\n", m->proc_num, action);
 			abort();
 	}
 
@@ -684,7 +684,7 @@ void MathildaUtils::get_http_headers(const char *s, std::map<std::string, std::s
 		}
 
 		if(item.find(":") != ERR) {
-			elems[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size()-item.find(":")-3);
+			e[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size()-item.find(":")-3);
 		}
 	}
 }
