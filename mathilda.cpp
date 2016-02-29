@@ -679,8 +679,12 @@ void MathildaUtils::get_http_headers(const char *s, std::map<std::string, std::s
 	char *v;
 
 	while (std::getline(ss, item, '\n')) {
+		if(item.find("\r\n") == 0) {
+			break;
+		}
+
 		if(item.find(":") != ERR) {
-			e[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size());
+			elems[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size()-item.find(":")-3);
 		}
 	}
 }
@@ -709,14 +713,14 @@ int main(int argc, char *argv[]) {
 		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
 	}
 
-	const char *HTTP = "200 OK\nX-Test: 1\nX-Hdr: 2\nX-Server: 3\n\r\n";
+	const char *HTTP = "200 OK\r\nX-Test: 1abc\r\nX-Hdr: abc2\r\nX-Server: 3xyz\r\n\r\ndatas";
 	std::map<std::string, std::string> hdrs;
 	MathildaUtils::get_http_headers(HTTP, hdrs);
 
-	fprintf(stdout, "HTTP Headers:\n");
+	fprintf(stdout, "HTTP Headers from:\n%s\n", HTTP);
 
 	for(auto const &h : hdrs) {
-		fprintf(stdout, "%s -> %s\n", h.first.c_str(), h.second.c_str());
+		fprintf(stdout, "[%s] -> [%s]\n", h.first.c_str(), h.second.c_str());
 	}
 
 	std::string url = MathildaUtils::normalize_url("http://www.yahoo.com/test//dir//a");
