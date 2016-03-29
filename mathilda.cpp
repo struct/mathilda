@@ -574,7 +574,7 @@ int main(int argc, char *argv[]) {
 	std::vector<std::string> paths;
 	paths.push_back("/index.php");
 	std::string hh = "your-example-host.com";
-	std::string d = "yahoo.com";
+	std::string d = "your-example-host.com";
 	std::string cookie_file = "";
 	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
     s->run(3);

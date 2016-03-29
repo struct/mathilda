@@ -31,11 +31,13 @@ A bit of history for you. This code was originally a threadpool but I ran into l
 All source code is documented using Doxygen and the documentation automatically created in the project. Everything below is a quick start guide to familiarize you with how to use Mathilda and Instruction classes. I recommend starting here and referring to the Doxygen generated documentation when writing code.
 
 ### Mathilda class functions
+
 	* add_instruction(Instruction *) - Adds an Instruction class to an internally managed vector
 	* execute_instructions() - Instructs Mathilda to start scanning hosts
 	* clear_instructions() - Clears the instructions vector Mathilda holds, rarely used
 
 ### Mathilda class members
+
 	* safe_to_fork - A bool indicating whether it is OK to fork (default: true)
 	* use_shm - A bool indicating whether shared memory segments should be allocated (default: false)
 	* set_cpu - A bool that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
@@ -43,11 +45,13 @@ All source code is documented using Doxygen and the documentation automatically 
 	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 
 ### Mathilda class misc
+
 	* MATHILDA_FORK - Environment variable that when set tells Mathilda it is OK to fork
 
 ### Instruction class members
 
 This class needs to be created with the new operator, filled in, and passed to the Mathilda::add_instruction function
+
 	* host (std::string) - The hostname to scan
 	* path (std::string) - The URI to request
 	* http_method (std::string) - The HTTP method to use (GET/POST)
@@ -69,6 +73,7 @@ This class needs to be created with the new operator, filled in, and passed to t
 ### MathildaUtils static class functions
 
 These utility functions were written to make writing libmathilda tools easier. When working with HTTP and URIs you often need to work a collection of strings in some way. Sometimes its tokenizing them, or modifying them for fuzzing. These functions will help you do those kinds of operations using simple STL containers. The documentation for each function is auto generated using doxygen. Please see the 'docs' directory for more information.
+
 	* name_to_addr(std::string const &, std::vector<std::string> &, bool) - Synchronous DNS lookups
 	* name_to_addr_a(std::vector<std::string> const &, std::vector<std::string> &) - Asynchronous DNS lookups
 	* shm_store_string(uint8_t *, const char *, size_t) - Stores a string in shared memory in [length,string] format
@@ -90,12 +95,14 @@ These utility functions were written to make writing libmathilda tools easier. W
 ### Response Structure
 
 This structure tracks the raw response from a web server. A pointer to the Response structure is passed to the Mathilda 'after' callback. Its members are:
+
 	* text - A char pointer to whatever the server responded with
 	* size - The size of the data the server responded with
 
 ### WaitResult Structure
 
 This structure is used by MathildaUtils::wait to return information about a child process to a caller. This function implements a basic wait loop for all child processes. A pointer to an instance of this structure is passed to the function and is filled out upon it returning. Its members are:
+
 	* return_code - An int representing the return code of an exited child
 	* int signal - An int representing the signal received by the child
 	* pid - The pid returned by waitpid
@@ -103,10 +110,70 @@ This structure is used by MathildaUtils::wait to return information about a chil
 ### ProcessInfo Structure
 
 This structure is used by MathildaFork to track child processes. An instance of this structure exists for each child process the class is currently managing. A single instance of this structure also exists in the MathildaFork class instance itself but is only intended to be accessed by child processes. Its members are:
+
 	* pid - The PID of the child process
 	* shm_id - Shared memory key/id
 	* shm_size - Size of the shared memory segment
 	* shm_ptr - Raw pointer to the shared memory segment
+
+### Useful web classes
+
+Mathilda ships with two very useful classes: Spider, Dirbuster. Both are self explanatory, here is how you use them:
+
+```
+#ifdef SPIDER
+	cout << "Spidering..." << endl;
+	std::vector<std::string> paths;
+	paths.push_back("/index.php");
+	std::string hh = "your-example-host.com";
+	std::string d = "your-example-host.com";
+	std::string cookie_file = "";
+	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
+    s->run(3);
+
+    for(auto x : s->links) {
+        cout << "Discovered Link: " << x.c_str() << endl;
+    }
+
+    delete s;
+#endif
+
+#ifdef DIRBUSTER
+    cout << "Dirbuster..." << endl;
+
+	std::vector <std::string> pages;
+	std::vector <std::string> dirs;
+	const char *p = "pages.txt";
+	const char *d = "dirs.txt";
+
+	MathildaUtils::read_file((char *) p, pages);
+	MathildaUtils::read_file((char *) d, dirs);
+
+	std::string hh = "your-example-host.com";
+	std::string cookie_file = "";
+
+    Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);
+    dirb->run();
+
+	fprintf(stdout, "Dirbuster results:\n");
+
+	for(auto pt : dirb->paths) {
+		fprintf(stdout, "%s\n", pt.c_str());
+	}
+
+    delete dirb;
+#endif
+```
+
+This example code is built into mathilda.cpp and can be tested using the following commands:
+
+make spider
+./spider
+
+or
+
+make dirbuster
+./dirbuster
 
 ## Writing Mathilda callbacks
 
