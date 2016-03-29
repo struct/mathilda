@@ -1,86 +1,92 @@
 // Copyright 2015 Yahoo Inc.
 // Licensed under the BSD license, see LICENSE file for terms.
 // Written by Chris Rohlf
+// A C++ Dirbuster class for Mathilda
 
-// An example tool that uses Mathilda
-// g++ -o dirbuster dirbuster.cpp mathilda.cpp -std=c++11 -ggdb -lcurl -luv
+#ifdef DIRBUSTER
 
 #include "mathilda.h"
-#include <sstream>
-#include <fstream>
-#include <string>
+#include "mathilda_utils.h"
+#include "dirbuster.h"
 
-using namespace std;
+// Runs the dirbuster
+void Dirbuster::run() {
+    unique_ptr<Mathilda> m(new Mathilda());
 
-vector<std::string> read_file(char *f) {
-	std::ifstream file(f);
-	std::string line;
-	vector <std::string> ret;
+	for(auto const &y : directories) {
+		for(auto const &z : pages) {
+			std::string path = "/" + y + z;
+			Instruction *i = new Instruction((char *) host.c_str(), (char *) path.c_str());
+			i->after = std::bind(&Dirbuster::dirbuster_after, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+			i->follow_redirects = false;
+			i->port = port;
+			i->cookie_file = cookies;
 
-	while(std::getline(file, line))
-		ret.push_back(std::move(line));
+			if(i->port == 443) {
+				i->ssl = true;
+			}
 
-	return ret;
-}
-
-// This only executes if we get a 200 OK
-int dirbuster_after(Instruction *i, CURL *c, Response *r) {
-	fprintf(stdout, "Found %s %s %s\n", i->host.c_str(), i->path.c_str(), i->http_method.c_str());
-	return OK;
-}
-
-int main(int argc, char *argv[]) {
-	unique_ptr<Mathilda> m(new Mathilda());
-
-	if(argc != 4) {
-		fprintf(stdout, "dirbuster <hosts> <pages> <directories>\n");
-		return -1;
+			m->add_instruction(i);
+		}
 	}
 
-	int count = 0;
+	// We are going to fork, the dirbuster_after
+	// callback will populate it
+	paths.clear();
 
-	vector <std::string> hosts;
-	hosts = read_file(argv[1]);
-
-	vector <std::string> pages;
-	pages = read_file(argv[2]);
-
-	vector <std::string> dirs;
-	dirs = read_file(argv[3]);
-
-	vector <std::string> methods;
-	methods.push_back("GET");
-	methods.push_back("POST");
-	methods.push_back("HEAD");
-	methods.push_back("PUT");
-
-	for(auto h : hosts) {
-		for(auto y : dirs) {
-			for(auto z : pages) {
-				for(auto j : methods) {
-					std::string path = "/" + y + z;
-					Instruction *i = new Instruction((char *)h.c_str(), (char *) path.c_str());
-					i->after = dirbuster_after;
-					i->follow_redirects = false;
-					i->port = 80;
-					i->response_code = 200;
-					i->http_method = j;
-					count++;
-					m->add_instruction(i);
-				}
-			}
-		}
-    }
-
+	// We use shm in dirbuster_finish to repopulate
+	// the paths vector
+	m->use_shm = true;
 	m->safe_to_fork = true;
+	m->finish = std::bind(&Dirbuster::dirbuster_finish, this, std::placeholders::_1);
 	m->execute_instructions();
-
-    fprintf(stdout, "Total HTTP Requests %d\n", count);
-    fprintf(stdout, "Total HTTP Requests per host: %d\n", pages.size() * dirs.size() * methods.size());
-    fprintf(stdout, "Total HTTP Methods: %d\n", methods.size());
-    fprintf(stdout, "Hosts: %d\n", hosts.size());
-    fprintf(stdout, "Pages: %d\n", pages.size());
-    fprintf(stdout, "Directories: %d\n", dirs.size());
-
-    return OK;
 }
+
+// We only get here with valid 200 responses
+void Dirbuster::dirbuster_after(Instruction *i, CURL *c, Response *r) {
+	// A naive check to remove blank return pages
+	// or pages with only a comment, json etc...
+	if(r->text == NULL || r->size < 75 || r->text[0] == '{') {
+		return;
+	}
+
+	std::string f = r->text;
+
+	// Query the blacklist
+	if(MathildaUtils::page_blacklist(f.c_str())) {
+		return;
+	}
+
+	std::string uri;
+
+	if(i->ssl == true) {
+		uri = "https://" + i->host + "/" + i->path;
+	} else {
+		uri = "http://" + i->host + "/" + i->path;
+	}
+
+	if(i->mathilda->use_shm == true) {
+		MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), uri.c_str(), uri.size());
+	} else {
+		paths.push_back(uri);
+	}
+
+	return;
+}
+
+// Finish up by copying all valid paths from
+// shared memory to our paths vector
+void Dirbuster::dirbuster_finish(uint8_t *shm_ptr) {
+	RET_IF_PTR_INVALID(shm_ptr);
+
+	StringEntry *head = (StringEntry *) shm_ptr;
+	char *string;
+
+	while(head->length != 0 && head->length < 16384) {
+		string = (char *) head + sizeof(StringEntry);
+		paths.push_back(string);
+		head += head->length;
+	}
+}
+
+#endif

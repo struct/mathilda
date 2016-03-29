@@ -3,7 +3,16 @@
 // Written by Chris Rohlf
 // Mathilda - (Beta) A library for making web tools that scale
 
+// Doxygen mainpage
+/*! \mainpage Mathilda 
+ *
+ * \section intro_sec Introduction
+ *
+ * Please see the <a href="md_README.html">README</a> for more information!
+ */
+
 #include "mathilda.h"
+#include "mathilda_utils.h"
 
 void Mathilda::add_instruction(Instruction *i) {
 	i->mathilda = this;
@@ -19,13 +28,11 @@ int Mathilda::execute_instructions() {
 		return ERR;
 	}
 
-	create_worker_processes();
-
-	return OK;
+	return create_worker_processes();
 }
 
 int Mathilda::get_shm_id() {
-	return this->shm_id;
+	return shm_id;
 }
 
 uint8_t *Mathilda::get_shm_ptr() {
@@ -33,73 +40,46 @@ uint8_t *Mathilda::get_shm_ptr() {
 }
 
 int Mathilda::create_worker_processes() {
-	uint32_t num_cores = MathildaUtils::count_cores();
+	if(instructions.empty()) {
+		return ERR;
+	}
+
+	uint32_t num_cores = mf->cores;
 
 	if(instructions.size() < num_cores) {
 		num_cores = instructions.size()-1;
 	}
 
-	int shmid = 0;
-	int status = 0;
-	int signl = 0;
-	int ret_code = 0;
-	std::vector<Process_Info> pi;
-
 	pid_t p = 0;
 
 	if(safe_to_fork == true || getenv("MATHILDA_FORK")) {
-		for(uint32_t proc_num = 0; proc_num < num_cores+1; proc_num++) {
-			if(use_shm) {
-				shmid = shmget(IPC_PRIVATE, shm_sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-
-				if(shmid == ERR) {
-					fprintf(stderr, "[Mathilda] Could not allocate shared memory. Aborting!\n(%s)\n", strerror(errno));
-					abort();
-				}
-
-				shm_ptr = (uint8_t *) shmat(shmid, 0, 0);
-
-				if(shm_ptr == (void *) ERR) {
-					fprintf(stderr, "[Mathilda] Could not get handle to shared memory. Aborting!\n(%s)\n", strerror(errno));
-					abort();
-				}
-
-				this->shm_id = shmid;
-			}
-
-			Process_Info p_i;
-
-			memset(&p_i, 0x0, sizeof(Process_Info));
-
-			if(use_shm) {
-				p_i.shm_id = shm_id;
-				p_i.shm_ptr = shm_ptr;
-			}
-
-			p = fork();
+		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
+			p = mf->fork_child(false, use_shm, shm_sz);
 
 			if(p == ERR) {
 #ifdef DEBUG
-				fprintf(stdout, "[Mathilda Debug] Failed to fork!\n");
+				fprintf(stdout, "[Mathilda] Failed to fork!\n");
 #endif
-			} else if(p == 0) {
+			} else if(mf->parent == false) {
+				if(use_shm) {
+					this->shm_ptr = mf->my_proc_info.shm_ptr;
+					this->shm_id = mf->my_proc_info.shm_id;
+				}
+
+				// Child process
 				uint32_t start = 0;
 				uint32_t end = 0;
 				uint32_t sz_of_work = instructions.size();
-
-				// Connect the shm in the child process
-				shm_ptr = (uint8_t *) shmat(shm_id, 0, 0);
 
 				if(num_cores > 0) {
 					sz_of_work = instructions.size() / num_cores;
 				}
 
 				start = sz_of_work * proc_num;
-
 				end = start + sz_of_work;
 
 				if(set_cpu == true) {
-					MathildaUtils::set_affinity(proc_num);
+					mf->set_affinity(proc_num);
 				}
 
 				alarm(timeout_seconds);
@@ -107,69 +87,57 @@ int Mathilda::create_worker_processes() {
 				mathilda_proc_init(proc_num, start, end, sz_of_work);
 				exit(OK);
 			}
-
-			p_i.proc_pid = p;
-			pi.push_back(p_i);
 		}
 
-		while((p = waitpid(-1, &status, 0))) {
-			if(errno == ECHILD) {
+		WaitResult wr;
+		memset(&wr, 0x0, sizeof(WaitResult));
+
+		int r = 0;
+
+		while((r = mf->wait(&wr))) {
+			// Check for any errors and break
+			if(r == ERR) {
 				break;
 			}
 
-			ret_code = WEXITSTATUS(status);
+			// The process exited normally or we simply
+			// returned because it received a SIGALRM.
+			// Execute the finish callback and collect
+			// any data from shared memory. All other
+			// signals are ignored for now
+			if(wr.return_code == OK || wr.signal == SIGALRM) {
+				int ret = 0;
+				ProcessInfo *s = mf->process_info_pid(wr.pid);
 
-			if(WIFEXITED(status)) {
+				if(s == NULL) {
+					finish(NULL);
 #ifdef DEBUG
-				fprintf(stdout, "[Mathilda Debug] Child %d exited normally with return code %d\n", p, ret_code);
+	fprintf(stdout, "[Mathilda] ProcessInfo for pid %d was NULL\n", wr.pid);
 #endif
-				// Child exited normally, call finish()
+					continue;
+				}
+
 				if(finish) {
-					for(auto x : pi) {
-						if(x.proc_pid == p) {
-							finish(x.shm_ptr);
-						}
+					finish(s->shm_ptr);
+				}
+
+				if(use_shm) {
+					ret = shmctl(s->shm_id, IPC_RMID, NULL);
+
+					if(ret == ERR) {
+						fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
+						abort();
+					}
+
+					ret = shmdt(s->shm_ptr);
+
+					if(ret == ERR) {
+						fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
+						abort();
 					}
 				}
-			}
 
-			if(WIFSIGNALED(status)) {
-				signl = WTERMSIG(status);
-#ifdef DEBUG
-				fprintf(stdout, "[Mathilda Debug] Child %d was terminated by signal %d\n", p, signl);
-#endif
-				if(WCOREDUMP(status)) {
-#ifdef DEBUG
-					fprintf(stdout, "[Mathilda Debug] Child %d core dumped\n", p);
-#endif
-				}
-
-				// This process probably timed out. Use
-				// kill so we don't get a zombie process
-				if(signl == SIGALRM) {
-#ifdef DEBUG
-					fprintf(stdout, "[Mathilda Debug] Child %d likely timed out\n", p);
-#endif	
-				}
-
-				// Although the child was terminated by
-				// a signal there is still the chance
-				// there is data in shared memory so
-				// we call finish() to retrieve
-				if(finish) {
-					for(auto x : pi) {
-						if(x.proc_pid == p) {
-							finish(x.shm_ptr);
-						}
-					}
-				}
-			}
-
-			if(WIFSTOPPED(status)) {
-				signl = WSTOPSIG(status);
-#ifdef DEBUG
-				fprintf(stdout, "[Mathilda Debug] Child %d was stopped by signal %d\n", p, signl);
-#endif
+				mf->remove_child_pid(s->pid);
 			}
 		}
 	} else {
@@ -181,38 +149,7 @@ int Mathilda::create_worker_processes() {
 		}
 	}
 
-	if(use_shm) {
-		for(auto s : pi) {
-
-			int ret;
-
-			if(s.shm_id == 0) {
-				continue;
-			}
-
-			ret = shmctl(s.shm_id, IPC_RMID, NULL);
-
-			if(ret == ERR) {
-				fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s.shm_id, strerror(errno));
-				abort();
-			}
-
-			ret = shmdt(s.shm_ptr);
-
-			if(ret == ERR) {
-				fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
-				abort();
-			}
-		}
-
-		pi.clear();
-	}
-
 	return OK;
-}
-
-uint32_t MathildaUtils::count_cores() {
-	return std::thread::hardware_concurrency();
 }
 
 void check_multi_info(Mathilda *m) {
@@ -265,9 +202,9 @@ void start_timeout(CURLM *multi, uint64_t timeout_ms, void *userp) {
 	}
 
 	Mathilda *m = (Mathilda *) userp;
-	m->timeout->data = m;
+	m->timeout.data = m;
 
-	uv_timer_start(m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
+	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
 }
 
 void curl_close_cb(uv_handle_t *handle) {
@@ -306,7 +243,7 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 			}
 		break;
 		default:
-			fprintf(stderr, "[LibMathilda (%d)] Unknown libcurl action (%d). Aborting!\n", m->proc_num, action);
+			fprintf(stderr, "[Mathilda (%d)] Unknown libcurl action (%d). Aborting!\n", m->proc_num, action);
 			abort();
 	}
 
@@ -316,13 +253,14 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 void Mathilda::setup_uv() {
 	if(loop == NULL) {
 		loop = uv_default_loop();
-		uv_timer_init(loop, timeout);
+		uv_timer_init(loop, &timeout);
 	}
 }
 
 void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work) {
-	if(instructions.empty())
+	if(instructions.empty()) {
 		return;
+	}
 
 	this->proc_num = proc_num;
 
@@ -336,7 +274,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		multi_handle = curl_multi_init();
 
 		if(multi_handle == NULL) {
-			fprintf(stdout, "[LibMathilda (%d)] Failed to initialize curl multi handle\n", proc_num);
+			fprintf(stdout, "[Mathilda (%d)] Failed to initialize curl multi handle\n", proc_num);
 			return;
 		}
 	}
@@ -349,8 +287,17 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 	std::vector<Instruction *>::const_iterator it;
 
 	for(it = instructions.begin()+start; it != instructions.begin()+end; ++it) {
+
+		if(it >= instructions.end()) {
+			return;
+		}
+
 		Instruction *i = *it;
 		CURLMcode res;
+
+		if(i == NULL) {
+			return;
+		}
 
 		std::string uri = i->ssl ? "https://" : "http://";
 
@@ -363,7 +310,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		}
 
 #ifdef DEBUG
-		fprintf(stdout, "[LibMathilda (%d)] uri=[%s] host=[%s] path=[%s]\n", proc_num, uri.c_str(), i->host.c_str(), i->path.c_str());
+		fprintf(stdout, "[Mathilda (%d)] uri=[%s] host=[%s] path=[%s]\n", proc_num, uri.c_str(), i->host.c_str(), i->path.c_str());
 #endif
 
 		std::string url = uri + i->host + i->path;
@@ -434,10 +381,10 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		}
 
 #ifdef DEBUG
-		fprintf(stdout, "[LibMathilda (%d)] Making HTTP %s request to %s\n", proc_num, i->http_method.c_str(), url.c_str());
+		fprintf(stdout, "[Mathilda (%d)(%d)] Making HTTP %s request to %s\n", getpid(), proc_num, i->http_method.c_str(), url.c_str());
 
 		if(i->use_proxy == true) {
-			fprintf(stdout, "[LibMathilda (%d)] Using proxy %s on port %d\n", proc_num, i->proxy.c_str(), i->proxy_port);
+			fprintf(stdout, "[Mathilda (%d)(%d)] Using proxy %s on port %d\n", getpid(), proc_num, i->proxy.c_str(), i->proxy_port);
 		}
 #endif
 		res = curl_multi_add_handle(multi_handle, i->easy);
@@ -478,7 +425,7 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	Socket_Info *s = (Socket_Info *) si->data;
 	Mathilda *m = (Mathilda *) s->m;
 
-	uv_timer_stop(m->timeout);
+	uv_timer_stop(&m->timeout);
 
 	if(status < 0) {
 		flags = CURL_CSELECT_ERR;
@@ -495,206 +442,19 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	curl_multi_socket_action(m->multi_handle, s->sock_fd, flags, &running_handles);
 	check_multi_info(m);
 
-	uv_timer_start(m->timeout, (uv_timer_cb) on_timeout, 0, 0);
-}
-
-// Linux only, won't build elsewhere, but
-// libmathilda is only supported on Linux
-void MathildaUtils::set_affinity(uint32_t c) {
-	cpu_set_t cpus;
-	CPU_ZERO(&cpus);
-	CPU_SET(c, &cpus);
-	int ret = sched_setaffinity(0, sizeof(cpus), &cpus);
-
-#ifdef DEBUG
-	if(ret == ERR) {
-		fprintf(stdout, "[LibMathilda] Failed to bind to CPU %d. Cache invalidation may occur!\n", c);
-	} else {
-		fprintf(stdout, "[LibMathilda] Successfully	bound to CPU %d\n", c);
-	}
-#endif
-}
-
-bool MathildaUtils::is_subdomain(std::string const &l) {
-	if((std::count(l.begin(), l.end(), '.')) < 3) {
-		return true;
-	}
-
-	return false;
-}
-
-bool MathildaUtils::link_blacklist(std::string const &l) {
-	if(l[0] == '#') {
-		return true;
-	}
-
-	const char *blacklist [] = { "example.com" };
-
-	for(int i=0; i < (sizeof(blacklist) / sizeof(char *)); i++) {
-		if(l.find(blacklist[i]) != ERR) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool MathildaUtils::page_blacklist(std::string const &l) {
-	if((l.find("Sorry, the page you requested was not found")) != string::npos
-		|| (l.find("The requested URL was not found on this server")) != string::npos
-		|| (l.find("<h2 align=\"center\">File does not exist.</h2>")) != string::npos) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool MathildaUtils::is_http_uri(std::string const &l) {
-	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
-	//return std::regex_match(link, e);
-
-	if(l.substr(0, 7) == "http://") {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool MathildaUtils::is_https_uri(std::string const &l) {
-	//std::regex e("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
-	//return std::regex_match(link, e);
-
-	if(l.substr(0, 8) == "https://") {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool MathildaUtils::is_domain_host(std::string const &domain, std::string const &l) {
-	//std::regex e(".*\\.example.com.*");
-	//return std::regex_match(link, e);
-
-	std::string d = MathildaUtils::extract_host_from_url(l);
-
-	if(d.find(domain) != string::npos) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-std::string MathildaUtils::extract_host_from_url(std::string const &l) {
-	if((MathildaUtils::is_http_uri(l)) == true) {
-		std::string t = l.substr(strlen("http://"), l.size());
-		int e = t.find('/');
-		return t.substr(0, e);
-	}
-
-	if((MathildaUtils::is_https_uri(l)) == true) {
-		std::string t = l.substr(strlen("https://"), l.size());
-		int e = t.find('/');
-		return t.substr(0, e);
-	}
-
-	int e = l.find("/");
-	return l.substr(0, e);
-}
-
-std::string MathildaUtils::extract_path_from_url(std::string const &l) {
-	std::string t(l);
-
-	if((MathildaUtils::is_http_uri(l)) == true) {
-		t = l.substr(strlen("http://"), l.size());
-	}
-
-	if((MathildaUtils::is_https_uri(l)) == true) {
-		t = l.substr(strlen("https://"), l.size());
-	}
-
-	int e = t.find('/');
-
-	if(e == ERR) {
-		return "";
-	}
-
-	return t.substr(e, t.size());
-}
-
-int MathildaUtils::name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) {
-	char buf[INET6_ADDRSTRLEN];
-	struct addrinfo *result = NULL, *res = NULL;
-    struct addrinfo hints;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_flags = 0;
-	hints.ai_protocol = 0;
-
-	int ret;
-
-	ret = getaddrinfo(l.c_str(), NULL, &hints, &result);
-
-	if(ret != OK) {
-		return ERR;
-	}
-
-	if(fast == true && result) {
-		freeaddrinfo(result);
-		return OK;
-	} else if(fast == true && result == NULL) {
-		return ERR;
-	}
-
-	for(res = result; res != NULL; res = res->ai_next) {
-		inet_ntop(res->ai_family, &((struct sockaddr_in *)res->ai_addr)->sin_addr, buf, sizeof(buf)-1);
-		out.push_back(buf);
-	}
-
-    freeaddrinfo(result);
-
-    return OK;
-}
-
-std::string MathildaUtils::normalize_url(std::string const &l) {
-	std::string prepend = "http://";
-	std::string tmp;
-
-	if((MathildaUtils::is_https_uri(l)) == true) {
-		prepend = "https://";
-	}
-
-	tmp = l.substr(prepend.size(), l.size());
-
-    if(tmp[0] == '/') {
-        tmp.erase(tmp.begin());
-    }
-
-	while((tmp.find("//")) != ERR) {
-		tmp.replace(tmp.find("//"), 2, "/");
-	}
-
-	tmp = prepend + tmp;
-
-	return tmp;
-}
-
-void MathildaUtils::get_http_headers(const char *s, std::map<std::string, std::string> &e) {
-	std::stringstream ss(s);
-	std::string item;
-	char *v;
-
-	while (std::getline(ss, item, '\n')) {
-		if(item[0] == '\r') {
-			break;
-		}
-
-		if(item.find(":") != ERR) {
-			e[item.substr(0, item.find(":"))] = item.substr(item.find(":")+2, item.size()-item.find(":")-3);
-		}
-	}
+	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, 0, 0);
 }
 
 #ifdef MATHILDA_TESTING
+
+#ifdef SPIDER
+#include "spider.h"
+#endif
+
+#ifdef DIRBUSTER
+#include "dirbuster.h"
+#endif
+
 void my_before(Instruction *i, CURL *c) {
 	//curl_easy_setopt(c, CURLOPT_USERAGENT, "your user agent");
 }
@@ -718,6 +478,42 @@ int main(int argc, char *argv[]) {
 		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
 	}
 
+	iret = MathildaUtils::name_to_addr("aaaaaaa.test.com", out, true);
+	fprintf(stdout, "name_to_addr(aaaaaaa.test.com) = %d\n", iret);
+
+	out.clear();
+
+	std::vector<std::string> hostnames;
+	hostnames.push_back("www.yahoo.com");
+	hostnames.push_back("answers.yahoo.com");
+	hostnames.push_back("finance.yahoo.com");
+	hostnames.push_back("mail.yahoo.com");
+	hostnames.push_back("messenger.yahoo.com");
+	hostnames.push_back("github.com");
+	hostnames.push_back("facebook.com");
+	hostnames.push_back("google.com");
+	hostnames.push_back("facebook.com");
+	hostnames.push_back("twitter.com");
+	hostnames.push_back("abc.com");
+	hostnames.push_back("cbs.com");
+	hostnames.push_back("nbc.com");
+	hostnames.push_back("slack.com");
+	hostnames.push_back("microsoft.com");
+	hostnames.push_back("nfl.com");
+	hostnames.push_back("mail.microsoft.com");
+	hostnames.push_back("mail.google.com");
+	hostnames.push_back("gmail.com");
+	hostnames.push_back("lastpass.com");
+	hostnames.push_back("github.io");
+	hostnames.push_back("mongodb.com");
+	MathildaUtils::name_to_addr_a(hostnames, out);
+
+	fprintf(stdout, "%d/%d results for async DNS lookup:\n", out.size(), hostnames.size());
+
+	for(auto o : out) {
+		cout << o << endl;
+	}
+
 	const char *HTTP = "200 OK\r\nX-Test: 1abc\r\nX-Hdr: abc2\r\nX-Server: 3xyz\r\n\r\ndatas";
 	std::map<std::string, std::string> hdrs;
 	MathildaUtils::get_http_headers(HTTP, hdrs);
@@ -728,17 +524,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout, "[%s] -> [%s]\n", h.first.c_str(), h.second.c_str());
 	}
 
-	std::string url = MathildaUtils::normalize_url("http://www.yahoo.com/test//dir//a");
-	fprintf(stdout, "normalize_url(http://www.yahoo.com/test//dir//a) = %s\n", url.c_str());
+	std::string url = MathildaUtils::normalize_uri("http://www.yahoo.com/test//dir//a");
+	fprintf(stdout, "normalize_uri(http://www.yahoo.com/test//dir//a) = %s\n", url.c_str());
 
-	iret = MathildaUtils::name_to_addr("aaaaaaa.yahoo.com", out, true);
-	fprintf(stdout, "name_to_addr(aaaaaaa.yahoo.com) = %d\n", iret);
+	std::string host = MathildaUtils::extract_host_from_uri("http://example.test.example.com/something/");
+	fprintf(stdout, "extract_host_from_uri(http://example.test.example.com/something) = %s\n", host.c_str());
 
-	std::string host = MathildaUtils::extract_host_from_url("http://example.test.example.com/something/");
-	fprintf(stdout, "extract_host_from_url(http://example.test.example.com/something) = %s\n", host.c_str());
-
-	std::string page = MathildaUtils::extract_path_from_url("http://example.test.example.com/something/test.php");
-	fprintf(stdout, "extract_path_from_url(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
+	std::string page = MathildaUtils::extract_path_from_uri("http://example.test.example.com/something/test.php");
+	fprintf(stdout, "extract_path_from_uri(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
 
 	ret = MathildaUtils::is_domain_host(".example.com", "/example");
 	fprintf(stdout, "is_domain_host(example.com, /example) | ret = %d\n", ret);
@@ -761,7 +554,13 @@ int main(int argc, char *argv[]) {
 	ret = MathildaUtils::is_http_uri("http://sports.example.com");
 	fprintf(stdout, "is_http_uri('http://sports.example.com') | ret = %d\n", ret);
 
-	ret = MathildaUtils::is_http_uri("http://www.example.com");
+	ret = MathildaUtils::is_http_uri("https://www.example.com");
+	fprintf(stdout, "is_http_uri('https://www.example.com') | ret = %d\n", ret);
+
+	ret = MathildaUtils::is_https_uri("https://www.example.com");
+	fprintf(stdout, "is_http_uri('https://www.example.com') | ret = %d\n", ret);
+
+	ret = MathildaUtils::is_https_uri("http://www.example.com");
 	fprintf(stdout, "is_http_uri('http://www.example.com') | ret = %d\n", ret);
 
 	ret = MathildaUtils::link_blacklist("http://www.example.com");
@@ -770,11 +569,54 @@ int main(int argc, char *argv[]) {
 	ret = MathildaUtils::link_blacklist("http://mail.example2.com");
 	fprintf(stdout, "link_blacklist('http://mail.example2.com') | ret = %d\n", ret);
 
-	unique_ptr<Mathilda> m(new Mathilda());
+#ifdef SPIDER
+	cout << "Spidering..." << endl;
+	std::vector<std::string> paths;
+	paths.push_back("/index.php");
+	std::string hh = "your-example-host.com";
+	std::string d = "yahoo.com";
+	std::string cookie_file = "";
+	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
+    s->run(3);
 
+    for(auto x : s->links) {
+        cout << "Discovered Link: " << x.c_str() << endl;
+    }
+
+    delete s;
+#endif
+
+#ifdef DIRBUSTER
+    cout << "Dirbuster..." << endl;
+
+	std::vector <std::string> pages;
+	std::vector <std::string> dirs;
+	const char *p = "pages.txt";
+	const char *d = "dirs.txt";
+
+	MathildaUtils::read_file((char *) p, pages);
+	MathildaUtils::read_file((char *) d, dirs);
+
+	std::string hh = "your-example-host.com";
+	std::string cookie_file = "";
+
+    Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);
+    dirb->run();
+
+	fprintf(stdout, "Dirbuster results:\n");
+
+	for(auto pt : dirb->paths) {
+		fprintf(stdout, "%s\n", pt.c_str());
+	}
+
+    delete dirb;
+#endif
+
+#ifdef LOAD_TEST
+	unique_ptr<Mathilda> m(new Mathilda());
 	m->finish = my_finish;
 
-	/*for(int j = 0; j < 20000; j++) {
+	for(int j = 0; j < 20000; j++) {
 		Instruction *i = new Instruction((char *) "example.test.example.com", (char *) "/test.html");
 		i->before = my_before;
 		i->after = my_after;
@@ -782,10 +624,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	m->safe_to_fork = true;
-	m->use_shm = true;
+	m->use_shm = false;
 	m->execute_instructions();
 	m->clear_instructions();
-*/
+#endif
+
 	return OK;
 }
 #endif

@@ -2,40 +2,38 @@
 
 A C++ class for writing fast and scalable web exploits and scanners.
 
-Disclaimer: I had to strip some of Mathilda's important functionality in order to open source it. I don't recommend you use Mathilda as-is. You will need to do some modifications and tweaking in order for it to be useful for you. Feel free to reach out to me with your ideas and pull requests.
+Disclaimer: I had to strip some of Mathilda's important functionality in order to open source it. You may need to do some modifications and tweaking in order for it to be useful for you. Feel free to reach out to me with your ideas and pull requests.
 
 ## What
 
-Mathilda is a multi-process libcurl/libuv wrapper written in C++11. Mathilda allows you to write fast web testing tools that can operate at scale.
+Mathilda is a multi-process libcurl/libuv wrapper written (mostly) in C++11. Mathilda allows you to write fast web testing tools that can operate at scale. But what does scale mean in this context? It means horizontal scaling and distribution of work across worker processes wherever possible.
 
 Using these classes you can write tools that work quickly against a very large set of hosts. Some good examples are command injection crawlers, XXE exploits, SSRF, or HTTP header discovery tools.
 
-Mathilda is not a singleton, you can have multiple Mathilda class instances in your program.
+Mathilda is not a singleton, you can have multiple Mathilda class instances in your program. Each class instance manages its own internal state with regards to child processes, libuv, and libcurl. The point is to abstract a lot of that away but still give you access to the bits that you want to customize.
 
 ## Why
 
-The libcurl API is good, but I needed something that wrapped all the plumbing code you normally rewrite with each new command line web testing tool. Mathilda is a library that handles all of that for you. All you have to do is focus on writing the code that defines the requests and does something with the responses. All of this will be automatically distributed for you across a pool of worker processes that invoke your callbacks. I have benchmarked it at about 10k HTTP GET requests per second on a 24 core system.
+The libcurl API is good, but I needed something that wrapped all the plumbing code you normally rewrite with each new command line web testing tool. Mathilda is a library that handles all of that for you. All you have to do is focus on writing the code that defines the requests and does something with the responses. All of this will be automatically distributed for you across a pool of worker processes that invoke your callbacks. I have benchmarked it doing simple tasks at around ~10,000 HTTP GET requests per second on a 24 core system.
 
 ## How
 
-Mathilda takes a list of Instruction class instances. Each Instruction class represents a specific HTTP request to be made. These Instructions tell Mathilda how to make a request and defines pre and post function callback pointers to handle the request and response appropriately.
+Mathilda takes a list of Instruction class instances. Each Instruction class represents a specific HTTP request to be made. These Instruction class instances tell Mathilda how to make a request and defines pre and post function callback pointers to handle the request and response appropriately.
 
 Depending on the number of cores your system has Mathilda manages a pool of worker processes for efficiently distributing work with an event model implemented by libuv. This design was chosen to minimize the impact that slower servers have on performance. More on that below.
 
-It is important to note that Mathilda calls fork to create the child processes. This is normally a bad choice for library designs but suits our needs perfectly. However this means that you probably shouldn't call fork from your Mathilda tool and you shouldn't reuse file descriptors from your callbacks unless you really know what you're doing. All of this is covered below in the API documentation.
+It is important to note that Mathilda calls fork to create the child processes. This is normally a bad choice for library designs but suits our needs perfectly. Mathilda manages these child processes with a class named MathildaFork. You can use this class directly from your own code to manage child processes if you want but its purely optional.
 
-A bit of history for you. This code was originally a threadpool but I ran into limitations with using evented IO from threads because nothing is thread safe. You end up having to message a worker thread to safely update timers to avoid race conditions and dead locks. Which quickly becomes very inefficient and complex code. This is true of libuv, libevent, and libev in one form or another. The complexity began to outweigh the performance hit of forking. If you don't care about using and evented IO with libcurl then you can safely use a threadpool and its fast-enough. However you will need to use select with libcurls multi interface, which is older and slower than epoll, which libuv manages for us. In fact theres probably more asynchronous operations we could be using libuv for but aren't yet.
+A bit of history for you. This code was originally a threadpool but I ran into limitations with using evented IO from threads because nothing is thread safe. You end up having to message a worker thread to safely update timers to avoid race conditions and dead locks. Which quickly becomes very inefficient and complex code. This is true of libuv, libevent, and libev in one form or another. The complexity began to outweigh the performance hit of forking. If you don't care about using and evented IO with libcurl then you can safely use a threadpool and its fast-enough. However you will need to use select with libcurls multi interface, which is older and slower than epoll, which libuv manages for us. In fact theres probably more asynchronous operations we could be using libuv for but aren't yet. If you're interested in how some of the Mathilda bits are reusable see Mathilda::name_to_addr_a and how it uses MathildaFork to distribute DNS lookups across worker processes.
 
 ## API
 
-If you don't see a function documented here then it isn't intended for tool/external use. Please see the tool example at the bottom of mathilda.cpp for copy/paste'able code to get you started.
+All source code is documented using Doxygen and the documentation automatically created in the project. Everything below is a quick start guide to familiarize you with how to use Mathilda and Instruction classes. I recommend starting here and referring to the Doxygen generated documentation when writing code.
 
 ### Mathilda class functions
 	* add_instruction(Instruction *) - Adds an Instruction class to an internally managed vector
 	* execute_instructions() - Instructs Mathilda to start scanning hosts
 	* clear_instructions() - Clears the instructions vector Mathilda holds, rarely used
-	* get_shm_id() - Returns an int which represents the shared memory ID (called from a child process)
-	* get_shm_ptr() - Returns a uint8_t pointer to the shared memory segment (called from a child process)
 
 ### Mathilda class members
 	* safe_to_fork - A bool indicating whether it is OK to fork (default: true)
@@ -47,25 +45,9 @@ If you don't see a function documented here then it isn't intended for tool/exte
 ### Mathilda class misc
 	* MATHILDA_FORK - Environment variable that when set tells Mathilda it is OK to fork
 
-### MathildaUtils static class functions
-
-In each of these calls d is a TLD and l is a URI. These utility functions need some work. They were stripped of a lot of their functionality in order to open source this code. You can quickly reimplement and/or modify them for your specific use case.
-
-	* bool link_blacklist(std::string const &l) - Compares a link against a known blacklist of links
-	* bool page_blacklist(std::string const &l) - Compares a page against a known blacklist of 404 pages
-	* bool is_http_uri(std::string const &l) - Returns true if your link is an http/http URI
-	* bool is_subdomain(std::string const &l) - Returns true if the link is to a subdomain
-	* bool is_domain_host(std::string const &d, std::string const &l) - Returns true if the link is to domain host d
-	* std::string extract_host_from_url(std::string const &l) - Returns test.y.example.com from http://test.y.example.com/test/index.php
-	* std::string extract_path_from_url(std::string const &l) - Returns /test/index.php from http://test.y.example.com/test/index.php
-	* int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast) - Performs a synchronous name to addr DNS lookup. If fast is true it returns immediately, otherwise the out vector is populated with the results. Returns OK/ERR
-	* std::string normalize_url(std::string const &l) - Attempts to normalize a URL for unnecessary /'s
-	* void get_http_headers(const char *s, std::map<std::string, std::string> &e) - Takes a raw HTTP response 's', and fills in a map 'e' with each HTTP header received
-
 ### Instruction class members
 
 This class needs to be created with the new operator, filled in, and passed to the Mathilda::add_instruction function
-
 	* host (std::string) - The hostname to scan
 	* path (std::string) - The URI to request
 	* http_method (std::string) - The HTTP method to use (GET/POST)
@@ -84,41 +66,76 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* before(Instruction *, CURL *) - A callback function pointer, executed before curl_perform
 	* after(Instruction *, CURL *, Response *) - Callback function pointer, executed after curl_perform
 
-### Response structure members
+### MathildaUtils static class functions
 
-A pointer to this structure is passed to the Mathilda 'after' callback
+These utility functions were written to make writing libmathilda tools easier. When working with HTTP and URIs you often need to work a collection of strings in some way. Sometimes its tokenizing them, or modifying them for fuzzing. These functions will help you do those kinds of operations using simple STL containers. The documentation for each function is auto generated using doxygen. Please see the 'docs' directory for more information.
+	* name_to_addr(std::string const &, std::vector<std::string> &, bool) - Synchronous DNS lookups
+	* name_to_addr_a(std::vector<std::string> const &, std::vector<std::string> &) - Asynchronous DNS lookups
+	* shm_store_string(uint8_t *, const char *, size_t) - Stores a string in shared memory in [length,string] format
+	* get_http_headers(const char *, std::map<std::string, std::string> &) - Returns a std::map of HTTP headers from a raw HTTP response
+	* read_file(char *, std::vector<std::string> &) - Reads a file line by line into a std::vector
+	* unique_string_vector(vector<std::string> &) - Removes duplicate entries from a std::vector of std::string
+	* split(const std::string &, char, std::vector<std::string> &) - Splits a std::string according to a delimeter
+	* replaceAll(std::string &, const std::string &, const std::string &) - Replaces all occurences of X within a std::string with Y
+	* link_blacklist(std::string const &) - Checks a std::string against a blacklist of URI's
+	* page_blacklist(std::string const &) - Checks a std::string against a blacklist of content
+	* is_http_uri(std::string const &) - Returns true if a URI is an HTTP URI
+	* is_https_uri(std::string const &) - Returns true if a URI is an HTTPS URI
+	* is_subdomain(std::string const &) - Returns true if a URI is a subdomain
+	* is_domain_host(std::string const &, std::string const &) - Returns true if a URI matches a domain
+	* extract_host_from_uri(std::string const &) - Extracts the hostname from a URI
+	* extract_path_from_uri(std::string const &) - Extracts the path from a URI
+	* normalize_uri(std::string const &) - Attempts to normalize a URI
 
+### Response Structure
+
+This structure tracks the raw response from a web server. A pointer to the Response structure is passed to the Mathilda 'after' callback. Its members are:
 	* text - A char pointer to whatever the server responded with
 	* size - The size of the data the server responded with
 
-## Writing your callback
+### WaitResult Structure
 
-Writing Mathilda callbacks is painless as long as you make use of C++11 std::function. Heres an example in pseudocode:
+This structure is used by MathildaUtils::wait to return information about a child process to a caller. This function implements a basic wait loop for all child processes. A pointer to an instance of this structure is passed to the function and is filled out upon it returning. Its members are:
+	* return_code - An int representing the return code of an exited child
+	* int signal - An int representing the signal received by the child
+	* pid - The pid returned by waitpid
+
+### ProcessInfo Structure
+
+This structure is used by MathildaFork to track child processes. An instance of this structure exists for each child process the class is currently managing. A single instance of this structure also exists in the MathildaFork class instance itself but is only intended to be accessed by child processes. Its members are:
+	* pid - The PID of the child process
+	* shm_id - Shared memory key/id
+	* shm_size - Size of the shared memory segment
+	* shm_ptr - Raw pointer to the shared memory segment
+
+## Writing Mathilda callbacks
+
+Writing Mathilda callbacks is painless as long as you make use of C++11 std::function or lambdas. Heres an example in pseudocode:
 
 ```
-int my_after(Instruction *i, CURL *c, Response *r) {
+void my_after(Instruction *i, CURL *c, Response *r) {
 	printf("Response from %s:\n%s\n", i->host.c_str(), r->text);
-	return OK;
+	return;
 }
 ...
 Mathilda *m = new Mathilda();
 Instruction *i = new Instruction((char *) "example.test.example.com", (char *) "/test.html");
-i->after = my_after;
+i->after = my_after; 	// i->after is a std::function
 m->add_instruction(i);
 m->execute_instructions();
 ```
 
 This tells Mathilda to invoke the my_after function after a request has been made. You can access the Instruction, Curl, and Response members passed to the callback like any other. Please see the API documentation above for the details on what they expose.
 
-The before callback executes before the Curl Easy handle is passed to Curl, giving you an opportunity to override any of the settings Mathilda has set on the handle.
+The Instruction::before callback executes before the Curl Easy handle is passed to Curl, giving you an opportunity to override any of the settings Mathilda has set on the handle.
 
-The after callback executes once the Curl call is completed and gives you the opportunity to inspect the response headers or content.
+The Instruction::after callback executes once the Curl call is completed and gives you the opportunity to inspect the response headers or content. This is only invoked if the HTTP response code matches Instruction::response_code or if Instruction::response_code is set to 0.
 
-The finish callback executes after all child processes have exited and gives you the opportunity to use the shared memory segment before it is destroyed.
+The Mathilda::finish callback executes after a child process has exited and gives you the opportunity to use the shared memory segment before it is destroyed. In most cases you want to share some results across parent and child process and these are often just strings. You can use MathildaUtils::shm_store_string to make this easier. See the section 'Using Shared Memory' below for more information.
 
-Note: If you choose not to fork (i.e. set safe_to_fork to false) and your connection hangs forever then you need to implement the logic to catch and recover from that. All of the neccessary libuv and libcurl handles are available for doing this.
+Note: If you choose not to fork (i.e. set Mathilda::safe_to_fork to false) and your connection hangs forever then you need to implement the logic to catch and recover from that. All of the neccessary libuv and libcurl handles are available for doing this. The preferred method however is to fork and set a timeout.
 
-### Accessing the Curl object
+### Accessing Curl Internals
 
 Inside of every Instruction object is a pointer to a [Curl Easy object](http://curl.haxx.se/libcurl/c/libcurl-easy.html). You can access this handle inside of your callback and make libcurl API calls to retrieve HTTP headers, status code, and anything else the libcurl API supports.
 
@@ -132,7 +149,9 @@ You can use this shared memory to store anything, and then access it later using
 
 Q: What third party requirements are there?
 
-A: libcurl, libuv, libstdc++.x86_64 libstdc++-devel.x86_64, a modern GCC/Clang (I recommend libgumbo for HTML parsing)
+A: libcurl, libuv, libstdc++.x86_64 libstdc++-devel.x86_64, a modern GCC/Clang (I recommend libgumbo for HTML parsing). If you compile these from source you will likely need to set your LD_LIBRARY_PATH environment variable. You can do this with the following command:
+
+export LD_LIBRARY_PATH=/usr/local/lib
 
 Q: Why not just write a better libcurl?
 
@@ -156,20 +175,22 @@ g++ -o mathilda_test mathilda.cpp -lcurl -std=c++11 -ggdb -luv -DMATHILDA_TESTIN
 
 You can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and use the command above.
 
+Q: I specified port 443 but my program keeps trying plain text HTTP over port 443...
+
+A: You probably set Instruction::port as 443 but you probably didn't set Instruction::ssl to true. Try something like this:
+
+```
+	if(i->port == 443) {
+		i->ssl = true;
+	}
+```
+
 ## Who
 
-Mathilda was written in 2015 by Chris Rohlf at Yahoo
+Mathilda was written in 2015/2016 by Chris Rohlf at Yahoo
 
 ## Copyright
 
 Copyright 2015 Yahoo Inc.
 Licensed under the BSD license, see LICENSE file for terms.
 Written by Chris Rohlf
-
-## TODO
-
-* Purge all instructions for a hosts that times out on sigalrm
-* An authentication hook for when you have custom SSO requirements
-* post_parameters map is currently unused
-* HTTP2 support (requires libcurl changes)
-* Blacklists could and should be configurable and populated via the API

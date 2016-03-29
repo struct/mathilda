@@ -1,7 +1,6 @@
 // Copyright 2015 Yahoo Inc.
 // Licensed under the BSD license, see LICENSE file for terms.
 // Written by Chris Rohlf
-// mathilda.h
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,22 +16,28 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <uv.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#include <sstream>
+#include <fstream>
+#include <iostream>
 #include <vector>
 #include <map>
 #include <regex>
 #include <thread>
 
+#include "mathilda_fork.h"
+
 using namespace std;
 
-#define MATHILDA_LIB_VERSION 1.4
+#define MATHILDA_LIB_VERSION 1.5
 #define OK 0
 #define ERR -1
 #define SHM_SIZE 1000000*16
 
 static const char *default_ua = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2049.0 Safari/537.36";
 
+/// Response structure
+/// The structure returned upon every
+/// successful HTTP request
 struct Response {
 	char *text;
 	size_t size;
@@ -40,15 +45,18 @@ struct Response {
 
 class Mathilda;
 
+/// Instruction class
+/// Each Instruction class represents an HTTP
+/// request to be made by the Mathilda engine
 class Instruction {
 public:
 	Instruction(char *h, char *p) {
 		easy = NULL;
-		host.assign(h);
-		path.assign(p);
-		http_method.assign("GET");
-		user_agent.assign(default_ua);
-		proxy.assign("");
+		host = h;
+		path = p;
+		http_method = "GET";
+		user_agent = default_ua;
+		proxy = "";
 		ssl = false;
 		include_headers = true;
 		follow_redirects = true;
@@ -92,41 +100,14 @@ public:
 	Mathilda *mathilda;
 };
 
-typedef struct Process_Info {
-	pid_t proc_pid;
-	int shm_id;
-	uint8_t *shm_ptr;
-} Process_Info;
-
-// Static utility methods for common routines
-class MathildaUtils {
-public:
-	static uint32_t count_cores();
-	static void set_affinity(uint32_t c);
-	static bool link_blacklist(std::string const &l);
-	static bool page_blacklist(std::string const &l);
-	static bool is_http_uri(std::string const &l);
-	static bool is_https_uri(std::string const &l);
-	static bool is_subdomain(std::string const &l);
-	static bool is_domain_host(std::string const &domain, std::string const &l);
-	static std::string extract_host_from_url(std::string const &l);
-	static std::string extract_path_from_url(std::string const &l);
-	static std::string normalize_url(std::string const &l);
-	static int name_to_addr(std::string const &l, std::vector<std::string> &out, bool fast);
-	static void get_http_headers(const char *s, std::map<std::string, std::string> &e);
-};
-
+/// Mathilda class
+/// The libmathilda engine is implemented here
 class Mathilda {
 public:
-	Mathilda() : use_shm(false), safe_to_fork(true), shm_id(0), proc_num(0), shm_sz(SHM_SIZE), 
-				shm_ptr(NULL), loop(NULL), multi_handle(NULL), timeout_seconds(30), set_cpu(true) {
-		timeout = (uv_timer_t *) malloc(sizeof(uv_timer_t));
-
-		if(timeout == NULL) {
-			fprintf(stdout, "[LibMathilda] Failed to allocate timeout in constructor\n");
-		} else {
-			memset(timeout, 0x0, sizeof(uv_timer_t));
-		}
+	Mathilda() : use_shm(false), safe_to_fork(true), set_cpu(true), proc_num(0), timeout_seconds(30),
+				shm_sz(SHM_SIZE), loop(NULL), multi_handle(NULL), shm_id(0), shm_ptr(NULL) {
+		memset(&timeout, 0x0, sizeof(uv_timer_t));
+		mf = new MathildaFork();
 	}
 
 	~Mathilda() {
@@ -139,20 +120,20 @@ public:
 		}
 
 		curl_global_cleanup();
+
 		multi_handle = NULL;
 
-		if(timeout) {
-			free(timeout);
-			timeout = NULL;
+		if(instructions.size() > 0) {
+			instructions.erase(instructions.begin(), instructions.end());
 		}
+
+		delete mf;
+		mf = NULL;
 	};
 
 	void add_instruction(Instruction *i);
 	void clear_instructions();
-	void mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work);
-	void setup_uv();
 	int execute_instructions();
-	int create_worker_processes();
 	int get_shm_id();
 	uint8_t *get_shm_ptr();
 
@@ -165,15 +146,21 @@ public:
 	std::vector<Instruction *> instructions;
 	std::vector<CURL *> easy_handles;
 	uv_loop_t *loop;
-	uv_timer_t *timeout;
+	uv_timer_t timeout;
 	CURLM *multi_handle;
 	std::function<void (uint8_t *s)> finish;
+	MathildaFork *mf;
 
 private:
+	void mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work);
+	void setup_uv();
+	int create_worker_processes();
 	int shm_id;
 	uint8_t *shm_ptr;
 };
 
+/// Socket_Info Structure is used internally
+/// by the Mathilda class
 class Socket_Info {
   public:
 	Socket_Info(curl_socket_t s, Mathilda *m) : sock_fd(s), m(m) {
