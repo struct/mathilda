@@ -38,10 +38,10 @@ All source code is documented using Doxygen and the documentation automatically 
 
 ### Mathilda class members
 
-	* safe_to_fork - A bool indicating whether it is OK to fork (default: true)
-	* use_shm - A bool indicating whether shared memory segments should be allocated (default: false)
-	* set_cpu - A bool that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
-	* timeout_seconds - The number of seconds a child process should be given before a SIGALRM is sent
+	* safe_to_fork (bool) - A flag indicating whether it is OK to fork (default: true)
+	* use_shm (bool) - A flag indicating whether shared memory segments should be allocated (default: false)
+	* set_cpu (bool) - A flag that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
+	* timeout_seconds (uint32_t) - The number of seconds a child process should be given before a SIGALRM is sent
 	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 
 ### Mathilda class misc
@@ -96,25 +96,26 @@ These utility functions were written to make writing libmathilda tools easier. W
 
 This structure tracks the raw response from a web server. A pointer to the Response structure is passed to the Mathilda 'after' callback. Its members are:
 
-	* text - A char pointer to whatever the server responded with
-	* size - The size of the data the server responded with
+	* text (char *) - A char pointer to whatever the server responded with
+	* size (size_t) - The size of the data the server responded with
 
 ### WaitResult Structure
 
 This structure is used by MathildaUtils::wait to return information about a child process to a caller. This function implements a basic wait loop for all child processes. A pointer to an instance of this structure is passed to the function and is filled out upon it returning. Its members are:
 
-	* return_code - An int representing the return code of an exited child
-	* int signal - An int representing the signal received by the child
-	* pid - The pid returned by waitpid
+	* return_code (int) - An int representing the return code of an exited child
+	* signal (int) - An int representing the signal received by the child
+	* pid (pid_t) - The pid returned by waitpid
 
 ### ProcessInfo Structure
 
 This structure is used by MathildaFork to track child processes. An instance of this structure exists for each child process the class is currently managing. A single instance of this structure also exists in the MathildaFork class instance itself but is only intended to be accessed by child processes. Its members are:
 
-	* pid - The PID of the child process
-	* shm_id - Shared memory key/id
-	* shm_size - Size of the shared memory segment
-	* shm_ptr - Raw pointer to the shared memory segment
+	* pid (pid_t) - The PID of the child process
+	* timeout (int) - How long until the child process should receive SIGALRM
+	* shm_id (int) - Shared memory key/id
+	* shm_size (size_t) - Size of the shared memory segment
+	* shm_ptr (uint8_t *) - Raw pointer to the shared memory segment
 
 ### Useful web classes
 

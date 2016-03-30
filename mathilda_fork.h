@@ -23,6 +23,8 @@ using namespace std;
 
 #define SHM_SIZE 1000000*16
 
+#define DEFAULT_TIMEOUT 90
+
 typedef struct WaitResult {
 	int return_code;
 	int signal;
@@ -34,6 +36,8 @@ typedef struct ProcessInfo {
 	pid_t pid;
 	// Shared memory ID
 	int shm_id;
+	// Timeout in seconds
+	uint32_t timeout;
 	// Shared memory size
 	size_t shm_size;
 	// Pointer to shared memory
@@ -82,7 +86,7 @@ public:
 	void remove_child_pid(pid_t pid);
 	int wait(WaitResult *wr);
 	pid_t fork_child(bool set_core);
-	pid_t fork_child(bool set_core, bool use_shm, size_t sz);
+	pid_t fork_child(bool set_core, bool use_shm, size_t sz, uint32_t timeout);
 	ProcessInfo *process_info_pid(pid_t pid);
 
 private:

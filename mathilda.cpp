@@ -54,7 +54,7 @@ int Mathilda::create_worker_processes() {
 
 	if(safe_to_fork == true || getenv("MATHILDA_FORK")) {
 		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
-			p = mf->fork_child(false, use_shm, shm_sz);
+			p = mf->fork_child(false, use_shm, shm_sz, timeout_seconds);
 
 			if(p == ERR) {
 #ifdef DEBUG
@@ -81,8 +81,6 @@ int Mathilda::create_worker_processes() {
 				if(set_cpu == true) {
 					mf->set_affinity(proc_num);
 				}
-
-				alarm(timeout_seconds);
 
 				mathilda_proc_init(proc_num, start, end, sz_of_work);
 				exit(OK);

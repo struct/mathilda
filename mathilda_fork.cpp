@@ -123,12 +123,13 @@ void MathildaFork::connect_shm(ProcessInfo *pi) {
 // Forks a child process with no support for shared memory
 //
 // Forks a child process and handles creating the ProcessInfo
-// structure associated with it
+// structure associated with it. The default timeout is 90
+// seconds.
 //
 // @param[in] set_core True if set_affinity should be called
 // @return Returns the PID of the child process or ERR
 pid_t MathildaFork::fork_child(bool set_core) {
-	return fork_child(set_core, false, false);
+	return fork_child(set_core, false, false, DEFAULT_TIMEOUT);
 }
 
 // Forks a child process with support for CPU binding and
@@ -142,7 +143,7 @@ pid_t MathildaFork::fork_child(bool set_core) {
 // @param[in] use_shm True if shared memory should be created
 // @param[in] sz Size of the shared memory segment
 // @return Returns the PID of the child process or ERR
-pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz) {
+pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz, uint32_t timeout) {
 	ProcessInfo *pi = new ProcessInfo;
 
 	if(pi == NULL) {
@@ -157,6 +158,8 @@ pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz) {
 	if(use_shm == true) {
 		MathildaFork::create_shm(pi, sz);
 	}
+
+	pi->timeout = timeout;
 
 	pid_t p = fork();
 
@@ -196,6 +199,8 @@ pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz) {
 		if(use_shm == true) {
 			connect_shm(&my_proc_info);
 		}
+
+		alarm(timeout);
 	}
 
 	return p;

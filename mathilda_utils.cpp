@@ -263,7 +263,7 @@ void MathildaUtils::name_to_addr_a(std::vector<std::string> const &hostnames, st
 	}
 
 	for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
-		int p = mf->fork_child(true, true, SHM_SIZE);
+		int p = mf->fork_child(true, true, SHM_SIZE, 60);
 
 		if(p == ERR) {
 	#ifdef DEBUG

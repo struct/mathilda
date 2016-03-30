@@ -366,7 +366,7 @@ void Spider::run() {
 		m->add_instruction(i);
 	}
 
-	m->use_shm = true;
+	m->use_shm = false;
 	m->safe_to_fork = false;
 	m->finish = std::bind(&Spider::spider_finish, this, std::placeholders::_1);
 	m->execute_instructions();
