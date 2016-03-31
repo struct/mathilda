@@ -41,6 +41,7 @@ All source code is documented using Doxygen and the documentation automatically 
 	* safe_to_fork (bool) - A flag indicating whether it is OK to fork (default: true)
 	* use_shm (bool) - A flag indicating whether shared memory segments should be allocated (default: false)
 	* set_cpu (bool) - A flag that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
+	* slow_parallel (bool) - Forks a child process for each Instruction if true (default: false)
 	* timeout_seconds (uint32_t) - The number of seconds a child process should be given before a SIGALRM is sent
 	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
 
@@ -62,10 +63,11 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* port (short) - Server port to connect to
 	* proxy_port (short) - Proxy port to connect to
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
-	* ssl (boolean) - SSL support
+	* ssl (bool) - SSL support
 	* include_headers (bool) - Include HTTP headers with the after callback (Response->text will include them)
-	* use_proxy (boolean) - Use the proxy configured with proxy/proxy_port
-	* follow_redirects (boolean) - Follow HTTP redirects
+	* use_proxy (bool) - Use the proxy configured with proxy/proxy_port
+	* follow_redirects (bool) - Follow HTTP redirects
+	* verbose (bool) - Enables verbose mode in Curl (this generates a lot of output)
 	* curl_code (CURLCode) - The Curl response code returned after the request is finished
 	* before(Instruction *, CURL *) - A callback function pointer, executed before curl_perform
 	* after(Instruction *, CURL *, Response *) - Callback function pointer, executed after curl_perform
@@ -168,13 +170,16 @@ Mathilda ships with two very useful classes: Spider, Dirbuster. Both are self ex
 
 This example code is built into mathilda.cpp and can be tested using the following commands:
 
+```
 make spider
 ./spider
-
+```
 or
 
+```
 make dirbuster
 ./dirbuster
+```
 
 ## Writing Mathilda callbacks
 
@@ -189,6 +194,18 @@ void my_after(Instruction *i, CURL *c, Response *r) {
 Mathilda *m = new Mathilda();
 Instruction *i = new Instruction((char *) "example.test.example.com", (char *) "/test.html");
 i->after = my_after; 	// i->after is a std::function
+m->add_instruction(i);
+m->execute_instructions();
+```
+
+Alternatively, you can use C++11 lambdas to do the same thing:
+
+```
+Mathilda *m = new Mathilda();
+Instruction *i = new Instruction((char *) "example.test.example.com", (char *) "/test.html");
+i->before = [](Instruction *i, CURL *c) {
+						i->add_http_header("Host: yourhost.com");
+					};
 m->add_instruction(i);
 m->execute_instructions();
 ```

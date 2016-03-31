@@ -11,6 +11,7 @@
 #include <string>
 
 using namespace std;
+const char *host_hdr = "Host: your.internal.example-host.com";
 
 int main(int argc, char *argv[]) {
 	unique_ptr<Mathilda> m(new Mathilda());
@@ -24,6 +25,10 @@ int main(int argc, char *argv[]) {
 		MathildaUtils::split(y, ':', out);
 		
 		Instruction *i = new Instruction("your.internal.example-host.com", "/");
+		i->before = [](Instruction *i, CURL *c) {
+						i->add_http_header(host_hdr);
+					};
+
 		i->proxy = out[1];
 
 		if(out[0] == "443") {
@@ -37,6 +42,8 @@ int main(int argc, char *argv[]) {
 		m->add_instruction(i);
 	}
 
+	m->slow_parallel = true;
+	m->timeout_seconds = 5;
 	m->safe_to_fork = true;
 	m->execute_instructions();
 

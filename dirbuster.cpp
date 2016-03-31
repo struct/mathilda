@@ -15,7 +15,7 @@ void Dirbuster::run() {
 
 	for(auto const &y : directories) {
 		for(auto const &z : pages) {
-			std::string path = "/" + y + z;
+			auto path = "/" + y + z;
 			Instruction *i = new Instruction((char *) host.c_str(), (char *) path.c_str());
 			i->after = std::bind(&Dirbuster::dirbuster_after, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 			i->follow_redirects = false;

@@ -13,6 +13,7 @@
 		return;						\
 	}
 
+// StringEntry
 typedef struct StringEntry {
 	size_t length;
 } StringEntry;

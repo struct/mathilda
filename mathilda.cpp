@@ -52,7 +52,7 @@ int Mathilda::create_worker_processes() {
 
 	pid_t p = 0;
 
-	if(safe_to_fork == true || getenv("MATHILDA_FORK")) {
+	if((safe_to_fork == true || getenv("MATHILDA_FORK")) && slow_parallel == false) {
 		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
 			p = mf->fork_child(false, use_shm, shm_sz, timeout_seconds);
 
@@ -138,6 +138,98 @@ int Mathilda::create_worker_processes() {
 				mf->remove_child_pid(s->pid);
 			}
 		}
+	} else if(slow_parallel == true && safe_to_fork == true) {
+		// This mode means only 1 Instruction per core
+		// which translates to a fork() per Instruction.
+		// Its slower but more reliable because you don't
+		// lose Instructions if the child receives SIGALRM.
+		// If this mode is used then the timeout should
+		// be relatively short
+		uint32_t count = 0;
+
+		slow:
+		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
+			count+=1;
+
+			p = mf->fork_child(false, use_shm, shm_sz, timeout_seconds);
+
+			if(p == ERR) {
+#ifdef DEBUG
+				fprintf(stdout, "[Mathilda] Failed to fork!\n");
+#endif
+			} else if(mf->parent == false) {
+				if(use_shm) {
+					this->shm_ptr = mf->my_proc_info.shm_ptr;
+					this->shm_id = mf->my_proc_info.shm_id;
+				}
+
+				if(set_cpu == true) {
+					mf->set_affinity(proc_num);
+				}
+
+				Instruction *i = instructions[count];
+				instructions.clear();
+				instructions.push_back(i);
+				mathilda_proc_init(0, 0, 1, 1);
+				exit(OK);
+			}
+		}
+
+		WaitResult wr;
+		memset(&wr, 0x0, sizeof(WaitResult));
+
+		int r = 0;
+
+		while((r = mf->wait(&wr))) {
+			// Check for any errors and break
+			if(r == ERR) {
+				break;
+			}
+
+			// The process exited normally or we simply
+			// returned because it received a SIGALRM.
+			// Execute the finish callback and collect
+			// any data from shared memory. All other
+			// signals are ignored for now
+			if(wr.return_code == OK || wr.signal == SIGALRM) {
+				int ret = 0;
+				ProcessInfo *s = mf->process_info_pid(wr.pid);
+
+				if(s == NULL) {
+					finish(NULL);
+#ifdef DEBUG
+	fprintf(stdout, "[Mathilda] ProcessInfo for pid %d was NULL\n", wr.pid);
+#endif
+					continue;
+				}
+
+				if(finish) {
+					finish(s->shm_ptr);
+				}
+
+				if(use_shm) {
+					ret = shmctl(s->shm_id, IPC_RMID, NULL);
+
+					if(ret == ERR) {
+						fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
+						abort();
+					}
+
+					ret = shmdt(s->shm_ptr);
+
+					if(ret == ERR) {
+						fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
+						abort();
+					}
+				}
+
+				mf->remove_child_pid(s->pid);
+			}
+		}
+
+		if(count <= instructions.size()) {
+			goto slow;
+		}
 	} else {
 		// No children were forked
 		mathilda_proc_init(0, 0, instructions.size(), instructions.size());
@@ -216,7 +308,7 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 
 	Mathilda *m = (Mathilda *) userp;
 
-	if(action == CURL_POLL_IN || action == CURL_POLL_OUT) {
+	if(action == CURL_POLL_IN || action == CURL_POLL_OUT || action == CURL_POLL_INOUT) {
 		if(socketp) {
 			si = (Socket_Info *) socketp;
 		} else {
@@ -231,6 +323,9 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 		break;
 		case CURL_POLL_OUT:
 			uv_poll_start(&si->poll_handle, UV_WRITABLE, curl_perform);
+		break;
+		case CURL_POLL_INOUT:
+			uv_poll_start(&si->poll_handle, UV_READABLE | UV_WRITABLE, curl_perform);
 		break;
 		case CURL_POLL_REMOVE:
 			if(socketp) {
@@ -311,7 +406,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 		fprintf(stdout, "[Mathilda (%d)] uri=[%s] host=[%s] path=[%s]\n", proc_num, uri.c_str(), i->host.c_str(), i->path.c_str());
 #endif
 
-		std::string url = uri + i->host + i->path;
+		auto url = uri + i->host + i->path;
 
 		if(easy_handles.size() == 0) {
 			i->easy = curl_easy_init();
@@ -349,6 +444,10 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		if(i->cookie_file != "") {
 			curl_easy_setopt(i->easy, CURLOPT_COOKIEFILE, i->cookie_file.c_str());
+		}
+
+		if(i->verbose == true) {
+			curl_easy_setopt(i->easy, CURLOPT_VERBOSE, 1L);
 		}
 
 		i->response.text = NULL;
@@ -443,6 +542,39 @@ void curl_perform(uv_poll_t *si, int status, int events) {
 	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, 0, 0);
 }
 
+// Adds an HTTP header to a Curl easy handle
+//
+// This function takes a std::string and appends
+// its contents to the linked list of HTTP headers
+// that libcurl will add to every request for this
+// particular Easy handle
+//
+// @param[in] header A std::string containing the header
+// @return Returns OK if successful, ERR if not
+int Instruction::add_http_header(const std::string &header) {
+	http_header_slist = curl_slist_append(http_header_slist, header.c_str());
+
+	if(http_header_slist == NULL) {
+		return ERR;
+	}
+
+	curl_easy_setopt(easy, CURLOPT_HTTPHEADER, http_header_slist);
+
+	return OK;
+}
+
+// Sets the user agent for this Instruction
+//
+// @param[in] ua A std::string containing the desired user agent
+// @returns Returns OK if successfully set, ERR if not
+int Instruction::set_user_agent(const std::string &ua) {
+	if(curl_easy_setopt(easy, CURLOPT_USERAGENT, (char *) ua.c_str()) == CURLE_OK) {
+		return OK;
+	} else {
+		return ERR;
+	}
+}
+
 #ifdef MATHILDA_TESTING
 
 #ifdef SPIDER
@@ -522,13 +654,13 @@ int main(int argc, char *argv[]) {
 		fprintf(stdout, "[%s] -> [%s]\n", h.first.c_str(), h.second.c_str());
 	}
 
-	std::string url = MathildaUtils::normalize_uri("http://www.yahoo.com/test//dir//a");
+	auto url = MathildaUtils::normalize_uri("http://www.yahoo.com/test//dir//a");
 	fprintf(stdout, "normalize_uri(http://www.yahoo.com/test//dir//a) = %s\n", url.c_str());
 
-	std::string host = MathildaUtils::extract_host_from_uri("http://example.test.example.com/something/");
+	auto host = MathildaUtils::extract_host_from_uri("http://example.test.example.com/something/");
 	fprintf(stdout, "extract_host_from_uri(http://example.test.example.com/something) = %s\n", host.c_str());
 
-	std::string page = MathildaUtils::extract_path_from_uri("http://example.test.example.com/something/test.php");
+	auto page = MathildaUtils::extract_path_from_uri("http://example.test.example.com/something/test.php");
 	fprintf(stdout, "extract_path_from_uri(http://example.test.example.com/something/test.php) = %s\n", page.c_str());
 
 	ret = MathildaUtils::is_domain_host(".example.com", "/example");
@@ -571,9 +703,9 @@ int main(int argc, char *argv[]) {
 	cout << "Spidering..." << endl;
 	std::vector<std::string> paths;
 	paths.push_back("/index.php");
-	std::string hh = "your-example-host.com";
-	std::string d = "your-example-host.com";
-	std::string cookie_file = "";
+	auto hh = "your-example-host.com";
+	auto d = "your-example-host.com";
+	auto cookie_file = "";
 	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
     s->run(3);
 
@@ -595,8 +727,8 @@ int main(int argc, char *argv[]) {
 	MathildaUtils::read_file((char *) p, pages);
 	MathildaUtils::read_file((char *) d, dirs);
 
-	std::string hh = "your-example-host.com";
-	std::string cookie_file = "";
+	auto hh = "your-example-host.com";
+	auto cookie_file = "";
 
     Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);
     dirb->run();

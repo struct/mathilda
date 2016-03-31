@@ -68,13 +68,13 @@ bool MathildaUtils::page_blacklist(std::string const &text) {
 /// Returns true if your string is an http URI
 ///
 /// Takes a string and determines if it starts with
-/// the http:/// URI. This is a simple helper function
+/// the http:// URI. This is a simple helper function
 /// for quickly determining whether to ignore a link
 ///
 /// @param[in] uri A string, usually a URI
-/// @return true if uri starts with http:///, false if it doesn't
+/// @return true if uri starts with http://, false if it doesn't
 bool MathildaUtils::is_http_uri(std::string const &uri) {
-	if(uri.substr(0, 7) == "http:///") {
+	if(uri.substr(0, 7) == "http://") {
 		return true;
 	} else {
 		return false;
@@ -90,7 +90,7 @@ bool MathildaUtils::is_http_uri(std::string const &uri) {
 /// @param[in] uri A string, usually a link from an HTML page
 /// @return true if uri starts with https:///, false if it doesn't
 bool MathildaUtils::is_https_uri(std::string const &uri) {
-	if(uri.substr(0, 8) == "https:///") {
+	if(uri.substr(0, 8) == "https://") {
 		return true;
 	} else {
 		return false;
@@ -129,7 +129,7 @@ std::string MathildaUtils::extract_host_from_uri(std::string const &uri) {
 	std::string host;
 
 	if((MathildaUtils::is_http_uri(uri)) == true) {
-		std::string t = uri.substr(strlen("http:///"), uri.size());
+		std::string t = uri.substr(strlen("http://"), uri.size());
 		size_t e = t.find('/');
 
 		if(e == string::npos) {
@@ -138,7 +138,7 @@ std::string MathildaUtils::extract_host_from_uri(std::string const &uri) {
 
 		host = t.substr(0, e);
 	} else if((MathildaUtils::is_https_uri(uri)) == true) {
-		std::string t = uri.substr(strlen("https:///"), uri.size());
+		std::string t = uri.substr(strlen("https://"), uri.size());
 		size_t e = t.find('/');
 
 		if(e == string::npos) {
@@ -175,11 +175,11 @@ std::string MathildaUtils::extract_path_from_uri(std::string const &uri) {
 	std::string t(uri);
 
 	if((MathildaUtils::is_http_uri(uri)) == true) {
-		t = uri.substr(strlen("http:///"), uri.size());
+		t = uri.substr(strlen("http://"), uri.size());
 	}
 
 	if((MathildaUtils::is_https_uri(uri)) == true) {
-		t = uri.substr(strlen("https:///"), uri.size());
+		t = uri.substr(strlen("https://"), uri.size());
 	}
 
 	size_t e = t.find('/');
@@ -377,11 +377,11 @@ void MathildaUtils::name_to_addr_a(std::vector<std::string> const &hostnames, st
 /// @param[in,out] uri A string or a link usually from an HTML page
 /// @return Returns a std::string uri thats been 'normalized'
 std::string MathildaUtils::normalize_uri(std::string const &uri) {
-	std::string prepend = "http:///";
+	std::string prepend = "http://";
 	std::string tmp;
 
 	if((MathildaUtils::is_https_uri(uri)) == true) {
-		prepend = "https:///";
+		prepend = "https://";
 	}
 
 	tmp = uri.substr(prepend.size(), uri.size());
@@ -390,8 +390,8 @@ std::string MathildaUtils::normalize_uri(std::string const &uri) {
         tmp.erase(tmp.begin());
     }
 
-	while((tmp.find("///")) != string::npos) {
-		tmp.replace(tmp.find("///"), 2, "/");
+	while((tmp.find("//")) != string::npos) {
+		tmp.replace(tmp.find("//"), 2, "/");
 	}
 
 	tmp = prepend + tmp;

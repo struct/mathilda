@@ -61,9 +61,11 @@ public:
 		include_headers = true;
 		follow_redirects = true;
 		use_proxy = false;
+		verbose = false;
 		port = 80;
 		proxy_port = 8080;
 		response_code = 200;
+		http_header_slist = NULL;
 		before = NULL;
 		after = NULL;
 		response.text = NULL;
@@ -75,7 +77,16 @@ public:
 		Instruction((char *) h.c_str(), (char *) p.c_str());
 	}
 
-	~Instruction() { }
+	~Instruction() { 
+		if(http_header_slist) {
+			curl_slist_free_all(http_header_slist);
+		}
+
+		http_header_slist = NULL;
+	}
+
+	int add_http_header(const std::string &header);
+	int set_user_agent(const std::string &ua);
 
 	CURL *easy;
 	std::string host;
@@ -90,9 +101,11 @@ public:
 	bool include_headers;
 	bool follow_redirects;
 	bool use_proxy;
+	bool verbose;
 	uint16_t port;
 	uint16_t proxy_port;
 	uint32_t response_code;
+	struct curl_slist *http_header_slist;
 	Response response;
 	CURLcode curl_code;
 	std::function<void (Instruction *, CURL *)> before;
@@ -104,9 +117,22 @@ public:
 /// The libmathilda engine is implemented here
 class Mathilda {
 public:
-	Mathilda() : use_shm(false), safe_to_fork(true), set_cpu(true), proc_num(0), timeout_seconds(30),
-				shm_sz(SHM_SIZE), loop(NULL), multi_handle(NULL), shm_id(0), shm_ptr(NULL) {
+	Mathilda() {
+		use_shm = false;
+		safe_to_fork = true;
+		set_cpu = true;
+		slow_parallel = false;
+		proc_num = 0;
+		timeout_seconds = 30;
+		shm_sz = SHM_SIZE;
+		loop = NULL;
+		multi_handle = NULL;
+		shm_id = 0;
+		shm_ptr = NULL;
+		multi_handle = NULL;
+
 		memset(&timeout, 0x0, sizeof(uv_timer_t));
+
 		mf = new MathildaFork();
 	}
 
@@ -140,6 +166,7 @@ public:
 	bool use_shm;
 	bool safe_to_fork;
 	bool set_cpu;
+	bool slow_parallel;
 	int proc_num;
 	uint32_t timeout_seconds;
 	uint32_t shm_sz;
