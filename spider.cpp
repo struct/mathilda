@@ -3,8 +3,6 @@
 // Written by Chris Rohlf
 // A C++ Spider class for Mathilda
 
-#ifdef SPIDER
-
 #include <gumbo.h>
 #include "mathilda.h"
 #include "mathilda_utils.h"
@@ -446,4 +444,3 @@ void Spider::run() {
 
 	MathildaUtils::unique_string_vector(links);
 }
-#endif

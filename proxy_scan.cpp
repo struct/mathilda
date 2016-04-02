@@ -19,9 +19,9 @@ int main(int argc, char *argv[]) {
 	vector <std::string> hosts;
 	MathildaUtils::read_file(argv[1], hosts);
 
-	// Expects format of "port:host"
 	for(auto y : hosts) {
 		std::vector<std::string> out;
+		// Expects format of "port:host"
 		MathildaUtils::split(y, ':', out);
 		
 		Instruction *i = new Instruction("your.internal.example-host.com", "/");

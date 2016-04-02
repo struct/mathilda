@@ -3,8 +3,6 @@
 // Written by Chris Rohlf
 // A C++ Spider class for Mathilda
 
-#ifdef SPIDER
-
 #include <gumbo.h>
 
 using namespace std;
@@ -21,7 +19,7 @@ public:
 		cookie_file(c),
 		paths(p) {
 #ifdef DEBUG
-		fprintf(stdout, "Spider: host(%s) : port(%d)\n", host.c_str(), port);
+		fprintf(stdout, "[Spider] host(%s) : port(%d)\n", host.c_str(), port);
 #endif
 	}
 
@@ -65,4 +63,3 @@ public:
     void run(int times);
     void run();
 };
-#endif
