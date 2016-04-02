@@ -342,24 +342,6 @@ void MathildaUtils::name_to_addr_a(std::vector<std::string> const &hostnames, st
 				}
 			}
 
-			if(s->shm_id == 0) {
-				continue;
-			}
-
-			ret = shmctl(s->shm_id, IPC_RMID, NULL);
-
-			if(ret == ERR) {
-				fprintf(stderr, "[MathildaUtils] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
-				abort();
-			}
-
-			ret = shmdt(s->shm_ptr);
-
-			if(ret == ERR) {
-				fprintf(stderr, "[MathildaUtils] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
-				abort();
-			}
-
 			mf->remove_child_pid(s->pid);
 		}
 	}
@@ -436,7 +418,7 @@ void MathildaUtils::read_file(char *fname, std::vector<std::string>& ret) {
 	std::string line;
 
 	while(std::getline(file, line)) {
-		ret.push_back(std::move(line));
+		ret.push_back(line);
 	}
 }
 

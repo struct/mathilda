@@ -66,6 +66,9 @@ void MathildaFork::remove_child_pid(pid_t pid) {
 		}
 	);
 
+	ProcessInfo *p = process_info_pid(pid);
+	delete_shm(p);
+
 	children.erase(it, children.end());
 }
 
@@ -108,6 +111,37 @@ void MathildaFork::create_shm(ProcessInfo *pi, size_t sz) {
 		fprintf(stderr, "[MathildaFork] Could not get handle to shared memory. Aborting!\n(%s)\n", strerror(errno));
 		abort();
 	}
+}
+
+// Delete a shared memory segment
+//
+// This function takes a pointer to a ProcessInfo
+// structure and destroys the shared memory used
+// by it
+//
+// @param[in] s A pointer to a ProcessInfo structure
+void MathildaFork::delete_shm(ProcessInfo *s) {
+	if(s == NULL || s->shm_id == 0 || s->shm_ptr == NULL) {
+		return;
+	}
+
+	int ret = shmctl(s->shm_id, IPC_RMID, NULL);
+
+	if(ret == ERR) {
+		fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
+		abort();
+	}
+
+	ret = shmdt(s->shm_ptr);
+
+	if(ret == ERR) {
+		fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
+		abort();
+	}
+
+	s->shm_ptr = NULL;
+	s->shm_id = 0;
+	s->shm_size = 0;
 }
 
 // Connect a shared memory segment given a ProcessInfo structure

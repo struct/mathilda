@@ -119,22 +119,6 @@ int Mathilda::create_worker_processes() {
 					finish(s->shm_ptr);
 				}
 
-				if(use_shm) {
-					ret = shmctl(s->shm_id, IPC_RMID, NULL);
-
-					if(ret == ERR) {
-						fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
-						abort();
-					}
-
-					ret = shmdt(s->shm_ptr);
-
-					if(ret == ERR) {
-						fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
-						abort();
-					}
-				}
-
 				mf->remove_child_pid(s->pid);
 			}
 		}
@@ -205,22 +189,6 @@ int Mathilda::create_worker_processes() {
 
 				if(finish) {
 					finish(s->shm_ptr);
-				}
-
-				if(use_shm) {
-					ret = shmctl(s->shm_id, IPC_RMID, NULL);
-
-					if(ret == ERR) {
-						fprintf(stderr, "[Mathilda] Failed to free shared memory (%d). Aborting!\n(%s)\n", s->shm_id, strerror(errno));
-						abort();
-					}
-
-					ret = shmdt(s->shm_ptr);
-
-					if(ret == ERR) {
-						fprintf(stderr, "[Mathilda] Failed to detach shared memory. Aborting!\n(%s)\n", strerror(errno));
-						abort();
-					}
 				}
 
 				mf->remove_child_pid(s->pid);

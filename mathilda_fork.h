@@ -17,6 +17,7 @@
 #include <algorithm>
 
 using namespace std;
+class MathildaFork;
 
 #define OK 0
 #define ERR -1
@@ -92,5 +93,6 @@ public:
 private:
 	void create_shm(ProcessInfo *pi);
 	void create_shm(ProcessInfo *pi, size_t sz);
+	void delete_shm(ProcessInfo *s);
 	void connect_shm(ProcessInfo *pi);
 };
