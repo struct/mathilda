@@ -1,4 +1,4 @@
-// Copyright 2015 Yahoo Inc.
+// Copyright 2015/2016 Yahoo Inc.
 // Licensed under the BSD license, see LICENSE file for terms.
 // Written by Chris Rohlf
 // A C++ Spider class for Mathilda
