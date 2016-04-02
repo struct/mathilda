@@ -3,8 +3,6 @@
 // Written by Chris Rohlf
 // A C++ Dirbuster class for Mathilda
 
-#ifdef DIRBUSTER
-
 #include "mathilda.h"
 #include "mathilda_utils.h"
 #include "dirbuster.h"
@@ -65,6 +63,8 @@ void Dirbuster::dirbuster_after(Instruction *i, CURL *c, Response *r) {
 		uri = "http://" + i->host + "/" + i->path;
 	}
 
+	uri = MathildaUtils::normalize_uri(uri);
+
 	if(i->mathilda->use_shm == true) {
 		MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), uri.c_str(), uri.size());
 	} else {
@@ -88,5 +88,3 @@ void Dirbuster::dirbuster_finish(uint8_t *shm_ptr) {
 		head += head->length;
 	}
 }
-
-#endif

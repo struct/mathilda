@@ -3,8 +3,6 @@
 // Written by Chris Rohlf
 // A C++ Spider class for Mathilda
 
-#ifdef DIRBUSTER
-
 using namespace std;
 
 class Dirbuster {
@@ -15,7 +13,7 @@ public:
 		host(h), pages(p), directories(d), cookies(c), port(po)
 	{
 #ifdef DEBUG
-		fprintf(stdout, "Dirbuster: host(%s) : port(%d)\n", host.c_str(), port);
+		fprintf(stdout, "[Dirbuster] host(%s) : port(%d)\n", host.c_str(), port);
 #endif
 	}
 
@@ -43,5 +41,3 @@ public:
 	void dirbuster_finish(uint8_t *shm_ptr);
 	void dirbuster_after(Instruction *i, CURL *c, Response *r);
 };
-
-#endif
