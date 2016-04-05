@@ -1,3 +1,7 @@
+## Copyright 2015/2016 Yahoo Inc.
+## Licensed under the BSD license, see LICENSE file for terms.
+## Written by Chris Rohlf
+
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall -pedantic
 LDFLAGS = -lcurl -luv

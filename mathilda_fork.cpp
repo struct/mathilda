@@ -4,6 +4,73 @@
 
 #include "mathilda_fork.h"
 
+/// Returns the PID for this child process
+pid_t MathildaFork::get_pid() {
+	return my_proc_info.pid;
+}
+
+/// Returns the shared memory ID for this child process
+int MathildaFork::get_shm_id() {
+	return my_proc_info.shm_id;
+}
+
+/// Returns the shared memory pointer for this child process
+uint8_t *MathildaFork::get_shm_ptr() {
+	return my_proc_info.shm_ptr;
+}
+
+/// Adds a string to an array of [size, string]
+/// structures in shared memory
+///
+/// Inserts a string and its corresponding
+/// length value into a list. Intended to
+/// be used for parent<->child exchange of
+/// data via shared memory
+///
+/// @param[in] str Pointer to a C string
+/// @param[in] sz Size of the string
+int MathildaFork::shm_store_string(const char *str, size_t sz) {
+	RET_ERR_IF_PTR_INVALID(get_shm_ptr());
+
+	if(sz == 0) {
+		return 0;
+	}
+
+	if(sz > 16384) {
+		sz = 16384;
+	}
+
+	StringEntry *tmp = (StringEntry *) get_shm_ptr();
+	uint8_t *string = NULL;
+
+	while(tmp->length != 0) {
+		tmp = tmp + tmp->length;
+	}
+
+	if((tmp - (StringEntry *) get_shm_ptr()) > SHM_SIZE) {
+		return ERR;
+	}
+
+	string = (uint8_t *) tmp + sizeof(StringEntry);
+	tmp->length = sz;
+	memcpy(string, str, sz);
+
+	return OK;
+}
+
+/// Adds a string to an array of [size, string]
+/// structures in shared memory
+///
+/// Inserts a string and its corresponding
+/// length value into a list. Intended to
+/// be used for parent<->child exchange of
+/// data via shared memory
+///
+/// @param[in] str Pointer to a NULL terminated C string
+int MathildaFork::shm_store_string(const char *str) {
+	return shm_store_string(str, strlen(str));
+}
+
 // Sets the processor affinity
 //
 // Mathilda works by breaking up sets of Instructions to be

@@ -288,20 +288,22 @@ void Spider::spider_after(Instruction *i, CURL *c, Response *r) {
 	search_for_links(i, output->root);
 
 	if(i->mathilda->use_shm == true && i->mathilda->get_shm_ptr()) {
+		MathildaFork *mf = i->mathilda->mf;
+
 		for(auto const &pp : posts) {
-			MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), pp.second.c_str(), pp.second.size());
+			mf->shm_store_string(pp.second.c_str());
 		}
 
 		MathildaUtils::unique_string_vector(links);
 
 		for(auto const &pp : links) {
-			MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), pp.c_str(), pp.size());
+			mf->shm_store_string(pp.c_str());
 		}
 
 		MathildaUtils::unique_string_vector(spider_links);
 
 		for(auto const &pp : spider_links) {
-			MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), pp.c_str(), pp.size());
+			mf->shm_store_string(pp.c_str());
 		}
 	}
 

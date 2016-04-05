@@ -65,8 +65,10 @@ void Dirbuster::dirbuster_after(Instruction *i, CURL *c, Response *r) {
 
 	uri = MathildaUtils::normalize_uri(uri);
 
+	MathildaFork *mf = i->mathilda->mf;
+
 	if(i->mathilda->use_shm == true) {
-		MathildaUtils::shm_store_string(i->mathilda->get_shm_ptr(), uri.c_str(), uri.size());
+		mf->shm_store_string(uri.c_str());
 	} else {
 		paths.push_back(uri);
 	}

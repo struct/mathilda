@@ -26,6 +26,21 @@ class MathildaFork;
 
 #define DEFAULT_TIMEOUT 90
 
+#define RET_ERR_IF_PTR_INVALID(ptr)	\
+	if(ptr == NULL || ptr == (void *) -1) { 	\
+		return ERR;					\
+	}
+
+#define RET_IF_PTR_INVALID(ptr)	 	\
+	if(ptr == NULL || ptr == (void *) -1) { 	\
+		return;						\
+	}
+
+// StringEntry
+typedef struct StringEntry {
+	size_t length;
+} StringEntry;
+
 typedef struct WaitResult {
 	int return_code;
 	int signal;
@@ -86,8 +101,13 @@ public:
 	void set_affinity(uint32_t c);
 	void remove_child_pid(pid_t pid);
 	int wait(WaitResult *wr);
+	int get_shm_id();
+	int shm_store_string(const char *str, size_t sz);
+	int shm_store_string(const char *str);
+	uint8_t *get_shm_ptr();
 	pid_t fork_child(bool set_core);
 	pid_t fork_child(bool set_core, bool use_shm, size_t sz, uint32_t timeout);
+	pid_t get_pid();
 	ProcessInfo *process_info_pid(pid_t pid);
 
 private:

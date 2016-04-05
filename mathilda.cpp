@@ -62,8 +62,8 @@ int Mathilda::create_worker_processes() {
 #endif
 			} else if(mf->parent == false) {
 				if(use_shm) {
-					this->shm_ptr = mf->my_proc_info.shm_ptr;
-					this->shm_id = mf->my_proc_info.shm_id;
+					this->shm_ptr = mf->get_shm_ptr();
+					this->shm_id = mf->get_shm_id();
 				}
 
 				// Child process
@@ -104,7 +104,6 @@ int Mathilda::create_worker_processes() {
 			// any data from shared memory. All other
 			// signals are ignored for now
 			if(wr.return_code == OK || wr.signal == SIGALRM) {
-				int ret = 0;
 				ProcessInfo *s = mf->process_info_pid(wr.pid);
 
 				if(s == NULL) {
@@ -143,8 +142,8 @@ int Mathilda::create_worker_processes() {
 #endif
 			} else if(mf->parent == false) {
 				if(use_shm) {
-					this->shm_ptr = mf->my_proc_info.shm_ptr;
-					this->shm_id = mf->my_proc_info.shm_id;
+					this->shm_ptr = mf->get_shm_ptr();
+					this->shm_id = mf->get_shm_id();
 				}
 
 				if(set_cpu == true) {
@@ -166,7 +165,7 @@ int Mathilda::create_worker_processes() {
 
 		while((r = mf->wait(&wr))) {
 			// Check for any errors and break
-			if(r == ERR) {
+			if(r == ERR && wr.pid == ERR) {
 				break;
 			}
 
@@ -176,7 +175,6 @@ int Mathilda::create_worker_processes() {
 			// any data from shared memory. All other
 			// signals are ignored for now
 			if(wr.return_code == OK || wr.signal == SIGALRM) {
-				int ret = 0;
 				ProcessInfo *s = mf->process_info_pid(wr.pid);
 
 				if(s == NULL) {
@@ -606,10 +604,29 @@ int main(int argc, char *argv[]) {
 	hostnames.push_back("mongodb.com");
 	MathildaUtils::name_to_addr_a(hostnames, out);
 
-	fprintf(stdout, "%d/%d results for async DNS lookup:\n", out.size(), hostnames.size());
+	fprintf(stdout, "%d/%d results for async reverse DNS lookup:\n", out.size(), hostnames.size());
 
 	for(auto o : out) {
 		cout << o << endl;
+	}
+
+	std::string ip = "8.8.8.8";
+	std::string out_r;
+
+	iret = MathildaUtils::addr_to_name(ip, out_r);
+	fprintf(stdout, "addr_to_name(8.8.8.8) = %s %d\n", out_r.c_str(), iret);
+
+	std::vector<std::string> ips_v;
+	ips_v.push_back("8.8.8.8");
+	ips_v.push_back("4.4.4.4");
+	ips_v.push_back("6.6.6.6");
+	ips_v.push_back("127.0.0.1");
+	std::vector<std::string> ips_v_out;
+	MathildaUtils::addr_to_name_a(ips_v, ips_v_out);
+
+	fprintf(stdout, "%d/%d results for async DNS lookup:\n", ips_v_out.size(), ips_v.size());
+	for(auto v : ips_v_out) {
+		fprintf(stdout, "%s\n", v.c_str());
 	}
 
 	const char *HTTP = "200 OK\r\nX-Test: 1abc\r\nX-Hdr: abc2\r\nX-Server: 3xyz\r\n\r\ndatas";

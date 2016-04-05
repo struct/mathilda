@@ -21,15 +21,22 @@ int main(int argc, char *argv[]) {
 
 	for(auto y : hosts) {
 		std::vector<std::string> out;
-		// Expects format of "port:host"
+		// Expects format of "port:IP"
 		MathildaUtils::split(y, ':', out);
+
+		std::string host;
+		MathildaUtils::addr_to_name(out[1], host);
 		
+		if(host == "") {
+			host = out[1];
+		}
+
 		Instruction *i = new Instruction("your.internal.example-host.com", "/");
 		i->before = [](Instruction *i, CURL *c) {
 						i->add_http_header(host_hdr);
 					};
 
-		i->proxy = out[1];
+		i->proxy = host;
 
 		if(out[0] == "443") {
 			i->ssl = true;
