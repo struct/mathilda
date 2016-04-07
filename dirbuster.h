@@ -8,9 +8,9 @@ using namespace std;
 class Dirbuster {
 
 public:
-	Dirbuster(const std::string &h, const vector<std::string> &p, const vector<std::string> &d,
+	Dirbuster(const vector<std::string> &h, const vector<std::string> &p, const vector<std::string> &d,
 				const std::string &c, uint16_t po) :
-		host(h), pages(p), directories(d), cookies(c), port(po)
+		hosts(h), pages(p), directories(d), cookies(c), port(po)
 	{
 #ifdef DEBUG
 		fprintf(stdout, "[Dirbuster] host(%s) : port(%d)\n", host.c_str(), port);
@@ -20,7 +20,7 @@ public:
 	~Dirbuster() {}
 
 	// Host we are dirbustering
-	std::string host;
+	std::vector<std::string> hosts;
 
 	// Pages
 	std::vector<std::string> pages;

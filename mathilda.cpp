@@ -94,7 +94,7 @@ int Mathilda::create_worker_processes() {
 
 		while((r = mf->wait(&wr))) {
 			// Check for any errors and break
-			if(r == ERR) {
+			if(r == ERR && wr.pid == ERR) {
 				break;
 			}
 
@@ -556,11 +556,11 @@ void my_before(Instruction *i, CURL *c) {
 }
 
 void my_after(Instruction *i, CURL *c, Response *r) {
-	//printf("Response: %s\n%s", i->host.c_str(), r->text);
+	//fprintf(stdout, "Response: %s\n%s", i->host.c_str(), r->text);
 }
 
 void my_finish(uint8_t *sm) {
-	//printf("Shared memory @ %p", sm);
+	//fprintf(stdout, "Shared memory @ %p", sm);
 }
 
 int main(int argc, char *argv[]) {
@@ -571,7 +571,7 @@ int main(int argc, char *argv[]) {
 	iret = MathildaUtils::name_to_addr("www.yahoo.com", out, false);
 
 	for(auto j : out) {
-		printf("name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
+		fprintf(stdout, "name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
 	}
 
 	iret = MathildaUtils::name_to_addr("aaaaaaa.test.com", out, true);
@@ -712,7 +712,8 @@ int main(int argc, char *argv[]) {
 	MathildaUtils::read_file((char *) p, pages);
 	MathildaUtils::read_file((char *) d, dirs);
 
-	auto hh = "your-example-host.com";
+	std::vector<std::string> hh;
+	hh.push_back("your-example-host.com");
 	auto cookie_file = "";
 
     Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);

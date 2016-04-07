@@ -11,20 +11,22 @@
 void Dirbuster::run() {
     unique_ptr<Mathilda> m(new Mathilda());
 
-	for(auto const &y : directories) {
-		for(auto const &z : pages) {
-			auto path = "/" + y + z;
-			Instruction *i = new Instruction((char *) host.c_str(), (char *) path.c_str());
-			i->after = std::bind(&Dirbuster::dirbuster_after, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-			i->follow_redirects = false;
-			i->port = port;
-			i->cookie_file = cookies;
+    for(auto const &h : hosts) {
+		for(auto const &y : directories) {
+			for(auto const &z : pages) {
+				auto path = "/" + y + z;
+				Instruction *i = new Instruction((char *) h.c_str(), (char *) path.c_str());
+				i->after = std::bind(&Dirbuster::dirbuster_after, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+				i->follow_redirects = false;
+				i->port = port;
+				i->cookie_file = cookies;
 
-			if(i->port == 443) {
-				i->ssl = true;
+				if(i->port == 443) {
+					i->ssl = true;
+				}
+
+				m->add_instruction(i);
 			}
-
-			m->add_instruction(i);
 		}
 	}
 
@@ -72,8 +74,6 @@ void Dirbuster::dirbuster_after(Instruction *i, CURL *c, Response *r) {
 	} else {
 		paths.push_back(uri);
 	}
-
-	return;
 }
 
 // Finish up by copying all valid paths from
