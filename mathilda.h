@@ -159,6 +159,7 @@ public:
 
 	void add_instruction(Instruction *i);
 	void clear_instructions();
+	void wait_loop();
 	int execute_instructions();
 	int get_shm_id();
 	uint8_t *get_shm_ptr();

@@ -39,6 +39,43 @@ uint8_t *Mathilda::get_shm_ptr() {
 	return (uint8_t *) this->shm_ptr;
 }
 
+void Mathilda::wait_loop() {
+	WaitResult wr;
+	memset(&wr, 0x0, sizeof(WaitResult));
+
+	int r = 0;
+
+	while((r = mf->wait(&wr))) {
+		// Check for any errors and break
+		if(r == ERR && wr.pid == ERR) {
+			break;
+		}
+
+		// The process exited normally or we simply
+		// returned because it received a SIGALRM.
+		// Execute the finish callback and collect
+		// any data from shared memory. All other
+		// signals are ignored for now
+		if(wr.return_code == OK || wr.signal == SIGALRM) {
+			ProcessInfo *s = mf->process_info_pid(wr.pid);
+
+			if(s == NULL) {
+				finish(NULL);
+#ifdef DEBUG
+	fprintf(stdout, "[Mathilda] ProcessInfo for pid %d was NULL\n", wr.pid);
+#endif
+				continue;
+			}
+
+			if(finish) {
+				finish(s->shm_ptr);
+			}
+
+			mf->remove_child_pid(s->pid);
+		}
+	}
+}
+
 int Mathilda::create_worker_processes() {
 	if(instructions.empty()) {
 		return ERR;
@@ -87,40 +124,7 @@ int Mathilda::create_worker_processes() {
 			}
 		}
 
-		WaitResult wr;
-		memset(&wr, 0x0, sizeof(WaitResult));
-
-		int r = 0;
-
-		while((r = mf->wait(&wr))) {
-			// Check for any errors and break
-			if(r == ERR && wr.pid == ERR) {
-				break;
-			}
-
-			// The process exited normally or we simply
-			// returned because it received a SIGALRM.
-			// Execute the finish callback and collect
-			// any data from shared memory. All other
-			// signals are ignored for now
-			if(wr.return_code == OK || wr.signal == SIGALRM) {
-				ProcessInfo *s = mf->process_info_pid(wr.pid);
-
-				if(s == NULL) {
-					finish(NULL);
-#ifdef DEBUG
-	fprintf(stdout, "[Mathilda] ProcessInfo for pid %d was NULL\n", wr.pid);
-#endif
-					continue;
-				}
-
-				if(finish) {
-					finish(s->shm_ptr);
-				}
-
-				mf->remove_child_pid(s->pid);
-			}
-		}
+		wait_loop();
 	} else if(slow_parallel == true && safe_to_fork == true) {
 		// This mode means only 1 Instruction per core
 		// which translates to a fork() per Instruction.
@@ -158,40 +162,7 @@ int Mathilda::create_worker_processes() {
 			}
 		}
 
-		WaitResult wr;
-		memset(&wr, 0x0, sizeof(WaitResult));
-
-		int r = 0;
-
-		while((r = mf->wait(&wr))) {
-			// Check for any errors and break
-			if(r == ERR && wr.pid == ERR) {
-				break;
-			}
-
-			// The process exited normally or we simply
-			// returned because it received a SIGALRM.
-			// Execute the finish callback and collect
-			// any data from shared memory. All other
-			// signals are ignored for now
-			if(wr.return_code == OK || wr.signal == SIGALRM) {
-				ProcessInfo *s = mf->process_info_pid(wr.pid);
-
-				if(s == NULL) {
-					finish(NULL);
-#ifdef DEBUG
-	fprintf(stdout, "[Mathilda] ProcessInfo for pid %d was NULL\n", wr.pid);
-#endif
-					continue;
-				}
-
-				if(finish) {
-					finish(s->shm_ptr);
-				}
-
-				mf->remove_child_pid(s->pid);
-			}
-		}
+		wait_loop();
 
 		if(count <= instructions.size()) {
 			goto slow;
