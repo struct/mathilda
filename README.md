@@ -152,8 +152,9 @@ Mathilda ships with two very useful classes: Spider, Dirbuster. Both are self ex
 	MathildaUtils::read_file((char *) p, pages);
 	MathildaUtils::read_file((char *) d, dirs);
 
-	std::string hh = "your-example-host.com";
-	std::string cookie_file = "";
+	std::vector<std::string> hh;
+	hh.push_back("your-example-host.com");
+	auto cookie_file = "";
 
     Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);
     dirb->run();
