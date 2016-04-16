@@ -13,7 +13,7 @@ public:
 		hosts(h), pages(p), directories(d), cookies(c), port(po)
 	{
 #ifdef DEBUG
-		fprintf(stdout, "[Dirbuster] host(%s) : port(%d)\n", host.c_str(), port);
+		fprintf(stdout, "[Dirbuster] %d hosts\n", hosts.size());
 #endif
 	}
 
