@@ -19,6 +19,11 @@ uint8_t *MathildaFork::get_shm_ptr() {
 	return my_proc_info.shm_ptr;
 }
 
+/// Returns the size of the shared memory segment
+size_t MathildaFork::get_shm_size() {
+	return my_proc_info.shm_size;
+}
+
 /// Adds a string to an array of [size, string]
 /// structures in shared memory
 ///
@@ -47,7 +52,7 @@ int MathildaFork::shm_store_string(const char *str, size_t sz) {
 		tmp = tmp + tmp->length;
 	}
 
-	if((tmp - (StringEntry *) get_shm_ptr()) > SHM_SIZE) {
+	if(tmp > (StringEntry *) get_shm_ptr() + get_shm_size()) {
 		return ERR;
 	}
 
@@ -56,6 +61,34 @@ int MathildaFork::shm_store_string(const char *str, size_t sz) {
 	memcpy(string, str, sz);
 
 	return OK;
+}
+
+/// Extracts strings from shared memory and puts
+/// them into a std::vector
+///
+/// @param[in] strings A reference to a vector of std::string
+/// @return Returns the size of the vector
+int MathildaFork::shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::vector<std::string> &strings) {
+	RET_ERR_IF_PTR_INVALID(shm_ptr);
+
+	StringEntry *head = (StringEntry *) shm_ptr;
+	char *string;
+
+	while(head->length != 0) {
+		string = (char *) head + sizeof(StringEntry);
+
+		if(string >= (char *) (shm_ptr + shm_size)) {
+			return strings.size();
+		}
+
+		if(strlen(string) == head->length) {
+			strings.push_back(string);
+		}
+
+		head += head->length;
+	}
+
+	return strings.size();
 }
 
 /// Adds a string to an array of [size, string]

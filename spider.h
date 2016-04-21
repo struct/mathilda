@@ -17,7 +17,8 @@ public:
 		host(h),
 		domain(d),
 		cookie_file(c),
-		paths(p) {
+		paths(p),
+		m(NULL) {
 #ifdef DEBUG
 		fprintf(stdout, "[Spider] host(%s) : port(%d)\n", host.c_str(), port);
 #endif
@@ -56,10 +57,12 @@ public:
 	std::vector<std::string> links;
 	std::vector<std::string> spider_links;
 
+	Mathilda *m;
+
     bool search_link_duplicates(std::string s);
     void search_for_links(Instruction *i, GumboNode* node);
     void spider_after(Instruction *i, CURL *c, Response *r);
-    void spider_finish(uint8_t *shm_ptr);
+    void spider_finish(ProcessInfo *pi);
     void run(int times);
     void run();
 };

@@ -43,7 +43,7 @@ All source code is documented using Doxygen and the documentation automatically 
 	* set_cpu (bool) - A flag that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
 	* slow_parallel (bool) - Forks a child process for each Instruction if true (default: false)
 	* timeout_seconds (uint32_t) - The number of seconds a child process should be given before a SIGALRM is sent
-	* finish(uint8_t *) - Callback function pointer, executed after child exits. Passed a pointer to shared memory
+	* finish(ProcessInfo *) - Callback function pointer, executed after child exits. Passed a pointer to a ProcessInfo structure
 
 ### Mathilda class misc
 

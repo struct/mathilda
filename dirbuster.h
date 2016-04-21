@@ -10,10 +10,10 @@ class Dirbuster {
 public:
 	Dirbuster(const vector<std::string> &h, const vector<std::string> &p, const vector<std::string> &d,
 				const std::string &c, uint16_t po) :
-		hosts(h), pages(p), directories(d), cookies(c), port(po)
+		hosts(h), pages(p), directories(d), cookies(c), port(po), m(NULL)
 	{
 #ifdef DEBUG
-		fprintf(stdout, "[Dirbuster] %d hosts\n", hosts.size());
+		fprintf(stdout, "[Dirbuster] %zu hosts\n", hosts.size());
 #endif
 	}
 
@@ -37,7 +37,10 @@ public:
 	// Web server port
 	uint16_t port;
 
+	// Mathilda instance
+	Mathilda *m;
+
 	void run();
-	void dirbuster_finish(uint8_t *shm_ptr);
+	void dirbuster_finish(ProcessInfo *pi);
 	void dirbuster_after(Instruction *i, CURL *c, Response *r);
 };

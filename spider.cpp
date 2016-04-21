@@ -310,17 +310,12 @@ void Spider::spider_after(Instruction *i, CURL *c, Response *r) {
 	return;
 }
 
-void Spider::spider_finish(uint8_t *shm_ptr) {
-	RET_IF_PTR_INVALID(shm_ptr);
-
-	StringEntry *head = (StringEntry *) shm_ptr;
-	char *string;
-
-	while(head->length != 0 && head->length < 16384) {
-		string = (char *) head + sizeof(StringEntry);
-		links.push_back(string);
-		head += head->length;
+void Spider::spider_finish(ProcessInfo *pi) {
+	if(pi == NULL) {
+		return;
 	}
+
+	m->mf->shm_retrieve_strings(pi->shm_ptr, pi->shm_size, links);
 }
 
 void Spider::run(int times) {
@@ -333,7 +328,7 @@ void Spider::run(int times) {
 void Spider::run() {
 	std::vector<std::string> pz = paths;
 
-	Mathilda *m = new Mathilda();
+	m = new Mathilda();
 	std::string h = host;
 
 	for(auto const &p : pz) {

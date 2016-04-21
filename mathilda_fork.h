@@ -104,7 +104,9 @@ public:
 	int get_shm_id();
 	int shm_store_string(const char *str, size_t sz);
 	int shm_store_string(const char *str);
+	int shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::vector<std::string> &strings);
 	uint8_t *get_shm_ptr();
+	size_t get_shm_size();
 	pid_t fork_child(bool set_core);
 	pid_t fork_child(bool set_core, bool use_shm, size_t sz, uint32_t timeout);
 	pid_t get_pid();

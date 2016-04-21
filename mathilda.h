@@ -176,7 +176,7 @@ public:
 	uv_loop_t *loop;
 	uv_timer_t timeout;
 	CURLM *multi_handle;
-	std::function<void (uint8_t *s)> finish;
+	std::function<void (ProcessInfo *pi)> finish;
 	MathildaFork *mf;
 
 private:

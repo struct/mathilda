@@ -68,7 +68,7 @@ void Mathilda::wait_loop() {
 			}
 
 			if(finish) {
-				finish(s->shm_ptr);
+				finish(s);
 			}
 
 			mf->remove_child_pid(s->pid);
@@ -530,7 +530,7 @@ void my_after(Instruction *i, CURL *c, Response *r) {
 	//fprintf(stdout, "Response: %s\n%s", i->host.c_str(), r->text);
 }
 
-void my_finish(uint8_t *sm) {
+void my_finish(ProcessInfo *sm) {
 	//fprintf(stdout, "Shared memory @ %p", sm);
 }
 
@@ -575,7 +575,7 @@ int main(int argc, char *argv[]) {
 	hostnames.push_back("mongodb.com");
 	MathildaUtils::name_to_addr_a(hostnames, out);
 
-	fprintf(stdout, "%d/%d results for async reverse DNS lookup:\n", out.size(), hostnames.size());
+	fprintf(stdout, "%zu/%zu results for async reverse DNS lookup:\n", out.size(), hostnames.size());
 
 	for(auto o : out) {
 		cout << o << endl;
@@ -595,7 +595,8 @@ int main(int argc, char *argv[]) {
 	std::vector<std::string> ips_v_out;
 	MathildaUtils::addr_to_name_a(ips_v, ips_v_out);
 
-	fprintf(stdout, "%d/%d results for async DNS lookup:\n", ips_v_out.size(), ips_v.size());
+	fprintf(stdout, "%zu/%zu results for async DNS lookup:\n", ips_v_out.size(), ips_v.size());
+
 	for(auto v : ips_v_out) {
 		fprintf(stdout, "%s\n", v.c_str());
 	}
