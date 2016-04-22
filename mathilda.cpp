@@ -224,13 +224,8 @@ void on_timeout(uv_timer_t *req) {
 }
 
 void start_timeout(CURLM *multi, long timeout_ms, void *userp) {
-
 	Mathilda *m = (Mathilda *) userp;
 	uv_timer_stop(&m->timeout);
-
-	//if(timeout_ms <= 0) {
-	//	timeout_ms = 1;
-	//}
 
 	if(timeout_ms > 0) {
 		m->timeout.data = m;
