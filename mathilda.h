@@ -65,6 +65,8 @@ public:
 		port = 80;
 		proxy_port = 8080;
 		response_code = 200;
+		connect_timeout = 5;
+		http_timeout = 10;
 		http_header_slist = NULL;
 		before = NULL;
 		after = NULL;
@@ -105,6 +107,8 @@ public:
 	uint16_t port;
 	uint16_t proxy_port;
 	uint32_t response_code;
+	uint32_t connect_timeout;
+	uint32_t http_timeout;
 	struct curl_slist *http_header_slist;
 	Response response;
 	CURLcode curl_code;
@@ -123,7 +127,7 @@ public:
 		set_cpu = true;
 		slow_parallel = false;
 		proc_num = 0;
-		timeout_seconds = 30;
+		process_timeout = 120;
 		shm_sz = SHM_SIZE;
 		loop = NULL;
 		multi_handle = NULL;
@@ -169,7 +173,7 @@ public:
 	bool set_cpu;
 	bool slow_parallel;
 	int proc_num;
-	uint32_t timeout_seconds;
+	uint32_t process_timeout;
 	uint32_t shm_sz;
 	std::vector<Instruction *> instructions;
 	std::vector<CURL *> easy_handles;
@@ -207,7 +211,7 @@ class Socket_Info {
 void check_multi_info(Mathilda *m);
 void curl_perform(uv_poll_t *si, int status, int events);
 void curl_close_cb(uv_handle_t *handle);
-void start_timeout(CURLM *multi, uint64_t timeout_ms, void *userp);
+void start_timeout(CURLM *multi, long timeout_ms, void *userp);
 void on_timeout(uv_timer_t *req, int status);
 int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *socketp);
 static size_t _curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp);

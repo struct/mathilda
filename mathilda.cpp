@@ -91,7 +91,7 @@ int Mathilda::create_worker_processes() {
 
 	if((safe_to_fork == true || getenv("MATHILDA_FORK")) && slow_parallel == false) {
 		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
-			p = mf->fork_child(false, use_shm, shm_sz, timeout_seconds);
+			p = mf->fork_child(false, use_shm, shm_sz, process_timeout);
 
 			if(p == ERR) {
 #ifdef DEBUG
@@ -138,7 +138,7 @@ int Mathilda::create_worker_processes() {
 		for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
 			count+=1;
 
-			p = mf->fork_child(false, use_shm, shm_sz, timeout_seconds);
+			p = mf->fork_child(false, use_shm, shm_sz, process_timeout);
 
 			if(p == ERR) {
 #ifdef DEBUG
@@ -223,15 +223,21 @@ void on_timeout(uv_timer_t *req) {
 	check_multi_info(m);
 }
 
-void start_timeout(CURLM *multi, uint64_t timeout_ms, void *userp) {
-	if(timeout_ms <= 0) {
-		timeout_ms = 1;
-	}
+void start_timeout(CURLM *multi, long timeout_ms, void *userp) {
 
 	Mathilda *m = (Mathilda *) userp;
-	m->timeout.data = m;
+	uv_timer_stop(&m->timeout);
 
-	uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
+	//if(timeout_ms <= 0) {
+	//	timeout_ms = 1;
+	//}
+
+	if(timeout_ms > 0) {
+		m->timeout.data = m;
+		uv_timer_start(&m->timeout, (uv_timer_cb) on_timeout, timeout_ms, 0);
+	} else {
+		on_timeout(&m->timeout);
+	}
 }
 
 void curl_close_cb(uv_handle_t *handle) {
@@ -354,6 +360,9 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 		curl_easy_setopt(i->easy, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 		curl_easy_setopt(i->easy, CURLOPT_CUSTOMREQUEST, i->http_method.c_str());
+
+        curl_easy_setopt(i->easy, CURLOPT_CONNECTTIMEOUT, i->connect_timeout);
+        curl_easy_setopt(i->easy, CURLOPT_TIMEOUT, i->http_timeout);
 
 		if(i->http_method == "GET") {
 			curl_easy_setopt(i->easy, CURLOPT_HTTPGET, 1);

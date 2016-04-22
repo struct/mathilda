@@ -49,8 +49,6 @@ int main(int argc, char *argv[]) {
 		m->add_instruction(i);
 	}
 
-	m->slow_parallel = true;
-	m->timeout_seconds = 5;
 	m->safe_to_fork = true;
 	m->execute_instructions();
 

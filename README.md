@@ -42,7 +42,7 @@ All source code is documented using Doxygen and the documentation automatically 
 	* use_shm (bool) - A flag indicating whether shared memory segments should be allocated (default: false)
 	* set_cpu (bool) - A flag that tells Mathilda to try and bind to a specific CPU with sched_setaffinity (default: true)
 	* slow_parallel (bool) - Forks a child process for each Instruction if true (default: false)
-	* timeout_seconds (uint32_t) - The number of seconds a child process should be given before a SIGALRM is sent
+	* process_timeout (uint32_t) - The number of seconds a child process should be given before a SIGALRM is sent
 	* finish(ProcessInfo *) - Callback function pointer, executed after child exits. Passed a pointer to a ProcessInfo structure
 
 ### Mathilda class misc
@@ -58,11 +58,13 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* http_method (std::string) - The HTTP method to use (GET/POST)
 	* post_body (std::string) - The POST body to send to the server
 	* cookie_file (std::string) - Location on disk of a Curl cookie file
-	* user_agent (std::string) - User agent string to use (default is Chrome)
+	* user_agent (std::string) - User agent string to use (default: Chrome)
 	* proxy (std::string) - Hostname of the proxy you want to use
 	* port (short) - Server port to connect to
 	* proxy_port (short) - Proxy port to connect to
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
+	* connect_timeout (int) - Maximum TCP connection timeout in seconds (default: 5)
+	* http_timeout (int) - Maximum HTTP transaction timeout in seconds (default: 10)
 	* ssl (bool) - SSL support
 	* include_headers (bool) - Include HTTP headers with the after callback (Response->text will include them)
 	* use_proxy (bool) - Use the proxy configured with proxy/proxy_port
