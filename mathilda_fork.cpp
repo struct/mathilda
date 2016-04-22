@@ -160,14 +160,17 @@ ProcessInfo *MathildaFork::process_info_pid(pid_t pid) {
 // @param[in] pid The PID of the process we no longer
 //			  need to track
 void MathildaFork::remove_child_pid(pid_t pid) {
+	ProcessInfo *p = process_info_pid(pid);
+
+	if(p != NULL) {
+		delete_shm(p);
+	}
+
 	auto it = std::remove_if(children.begin(), children.end(), 
 		[pid](ProcessInfo *p) {
 			return p->pid == pid; 
 		}
 	);
-
-	ProcessInfo *p = process_info_pid(pid);
-	delete_shm(p);
 
 	children.erase(it, children.end());
 }
