@@ -267,7 +267,7 @@ int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *so
 		break;
 		case CURL_POLL_REMOVE:
 			if(socketp) {
-	 	    	si = (Socket_Info *) socketp;
+				si = (Socket_Info *) socketp;
 				uv_poll_stop(&si->poll_handle);
 				uv_close((uv_handle_t *) &si->poll_handle, curl_close_cb);
 				curl_multi_assign(m->multi_handle, s, NULL);
@@ -317,8 +317,7 @@ void Mathilda::mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t en
 
 	std::vector<Instruction *>::const_iterator it;
 
-	for(it = instructions.begin()+start; it != instructions.begin()+end; ++it) {
-
+	for(it = instructions.begin()+start; it != instructions.begin()+end; it++) {
 		if(it >= instructions.end()) {
 			return;
 		}
