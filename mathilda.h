@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <sched.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -155,6 +156,12 @@ public:
 
 		if(instructions.size() > 0) {
 			instructions.erase(instructions.begin(), instructions.end());
+		}
+
+		if(loop != NULL) {
+			uv_stop(loop);
+			uv_loop_close(loop);
+			loop = NULL;
 		}
 
 		delete mf;
