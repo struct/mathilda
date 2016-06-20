@@ -65,7 +65,7 @@ This class needs to be created with the new operator, filled in, and passed to t
 	* response_code (int) - Invoke the after callback only if HTTP response matches this (0 for always invoke)
 	* connect_timeout (int) - Maximum TCP connection timeout in seconds (default: 5)
 	* http_timeout (int) - Maximum HTTP transaction timeout in seconds (default: 10)
-	* ssl (bool) - SSL support
+	* ssl (bool) - TLS/SSL support, true to enable, false to disable
 	* include_headers (bool) - Include HTTP headers with the after callback (Response->text will include them)
 	* use_proxy (bool) - Use the proxy configured with proxy/proxy_port
 	* follow_redirects (bool) - Follow HTTP redirects
