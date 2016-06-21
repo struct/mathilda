@@ -239,7 +239,7 @@ Q: What third party requirements are there?
 
 A: libcurl, libuv, libstdc++.x86_64 libstdc++-devel.x86_64, a modern GCC/Clang (I recommend libgumbo for HTML parsing). If you compile these from source you will likely need to set your LD_LIBRARY_PATH environment variable. You can do this with the following command:
 
-export LD_LIBRARY_PATH=/usr/local/lib
+```export LD_LIBRARY_PATH=/usr/local/lib```
 
 Q: Why not just write a better libcurl?
 
@@ -255,11 +255,11 @@ A: Heres the short answer:
 
 Compile Mathilda as a library:
 
-g++ -o libmathilda.so mathilda.cpp -lcurl -std=c++11 -shared -fPIC -rdynamic -ggdb -luv
+```g++ -o libmathilda.so mathilda.cpp -lcurl -std=c++11 -shared -fPIC -rdynamic -ggdb -luv```
 
 Compile Mathilda unit tests (found at the bottom of Mathilda.cpp)
 
-g++ -o mathilda_test mathilda.cpp -lcurl -std=c++11 -ggdb -luv -DMATHILDA_TESTING
+```g++ -o mathilda_test mathilda.cpp -lcurl -std=c++11 -ggdb -luv -DMATHILDA_TESTING```
 
 You can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and use the command above.
 
