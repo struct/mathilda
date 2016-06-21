@@ -111,7 +111,8 @@ int MathildaFork::shm_store_string(const char *str) {
 // by child processes to bind them to a specific cpu
 //
 // @param[in] CPU number to bind to
-void MathildaFork::set_affinity(uint32_t c) {
+// @return Returns OK or ERR from sched_setaffinity
+int MathildaFork::set_affinity(uint32_t c) {
 	if(c >= cores) {
 		c = 0;
 	}
@@ -131,6 +132,8 @@ void MathildaFork::set_affinity(uint32_t c) {
 		fprintf(stdout, "[MathildaFork] Child (pid: %d) successfully bound to CPU %d\n", getpid(), c);
 	}
 #endif
+
+	return ret;
 }
 
 // Returns the ProcessInfo structure for a PID

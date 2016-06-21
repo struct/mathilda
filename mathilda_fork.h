@@ -98,8 +98,8 @@ public:
 	// process should be accessing this
 	ProcessInfo my_proc_info;
 
-	void set_affinity(uint32_t c);
 	void remove_child_pid(pid_t pid);
+	int set_affinity(uint32_t c);
 	int wait(WaitResult *wr);
 	int get_shm_id();
 	int shm_store_string(const char *str, size_t sz);
