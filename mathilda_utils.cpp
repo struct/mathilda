@@ -14,7 +14,6 @@
 /// @param[in] uri A url, hostname or other string
 /// @return true if uri is a subdomain, false if its not
 bool MathildaUtils::is_subdomain(std::string const &uri) {
-
 	std::string domain = MathildaUtils::extract_host_from_uri(uri);
 
 	if((std::count(domain.begin(), domain.end(), '.')) < 3) {
