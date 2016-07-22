@@ -441,3 +441,22 @@ void Spider::run() {
 
 	MathildaUtils::unique_string_vector(links);
 }
+
+#ifdef SPIDER
+int main(int argc, char *argv[]) {
+	cout << "Spidering..." << endl;
+	std::vector<std::string> paths;
+	paths.push_back("/index.php");
+	auto hh = "your-example-host.com";
+	auto d = "your-example-host.com";
+	auto cookie_file = "";
+	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
+    s->run(3);
+
+    for(auto x : s->links) {
+        cout << "Discovered Link: " << x.c_str() << endl;
+    }
+
+    delete s;
+}
+#endif

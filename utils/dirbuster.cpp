@@ -86,3 +86,32 @@ void Dirbuster::dirbuster_finish(ProcessInfo *pi) {
 	// Our Dirbuster instance is in scope here
 	m->mf->shm_retrieve_strings(pi->shm_ptr, pi->shm_size, paths);
 }
+
+#ifdef DIRBUSTER
+int main(int argc, char *argv[]) {
+    cout << "Dirbuster..." << endl;
+
+	std::vector <std::string> pages;
+	std::vector <std::string> dirs;
+	const char *p = "pages.txt";
+	const char *d = "dirs.txt";
+
+	MathildaUtils::read_file((char *) p, pages);
+	MathildaUtils::read_file((char *) d, dirs);
+
+	std::vector<std::string> hh;
+	hh.push_back("your-example-host.com");
+	auto cookie_file = "";
+
+    Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);
+    dirb->run();
+
+	fprintf(stdout, "Dirbuster results:\n");
+
+	for(auto pt : dirb->paths) {
+		fprintf(stdout, "%s\n", pt.c_str());
+	}
+
+    delete dirb;
+}
+#endif
