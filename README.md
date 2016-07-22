@@ -237,13 +237,9 @@ You can use this shared memory to store anything, and then access it later using
 
 Q: How do I build library and other components?
 
-A: Type the following to compile libmathilda.so in the build directory. You can then link directly against it or you can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and use the command above.
+A: Type the following to compile libmathilda.so in the build directory. You can then link directly against it or you can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and re-run the make commands.
 
-```make library```
-
-or
-
-```make all```
+```make library```  or  ```make all```
 
 Q: What third party requirements are there?
 
