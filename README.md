@@ -1,6 +1,6 @@
 # Mathilda
 
-A C++ class for writing fast and scalable web exploits and scanners.
+A C++11 class for writing fast and scalable web exploits and scanners in C++11
 
 Disclaimer: I had to strip some of Mathilda's important functionality in order to open source it. You may need to do some modifications and tweaking in order for it to be useful for you. Feel free to reach out to me with your ideas and pull requests.
 
@@ -235,6 +235,16 @@ You can use this shared memory to store anything, and then access it later using
 
 ## FAQ:
 
+Q: How do I build library and other components?
+
+A: Type the following to compile libmathilda.so in the build directory. You can then link directly against it or you can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and use the command above.
+
+```make library```
+
+or
+
+```make all```
+
 Q: What third party requirements are there?
 
 A: libcurl, libuv, libstdc++.x86_64 libstdc++-devel.x86_64, a modern GCC/Clang (I recommend libgumbo for HTML parsing). If you compile these from source you will likely need to set your LD_LIBRARY_PATH environment variable. You can do this with the following command:
@@ -248,20 +258,6 @@ A: Because theres nothing wrong with libcurl. In fact it works perfectly for bot
 Q: What has Mathilda been used for?
 
 A: Web application security testing, web server and caching proxy load testing, HTTP fuzzing, and many other things.
-
-Q: How do I compile/use Mathilda and these tools?
-
-A: Heres the short answer:
-
-Compile Mathilda as a library:
-
-```g++ -o libmathilda.so mathilda.cpp -lcurl -std=c++11 -shared -fPIC -rdynamic -ggdb -luv```
-
-Compile Mathilda unit tests (found at the bottom of Mathilda.cpp)
-
-```g++ -o mathilda_test mathilda.cpp -lcurl -std=c++11 -ggdb -luv -DMATHILDA_TESTING```
-
-You can delete the unit tests at the bottom of mathilda.cpp and replace it with your own code and use the command above.
 
 Q: I specified port 443 but my program keeps trying plain text HTTP over port 443...
 
