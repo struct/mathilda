@@ -271,6 +271,6 @@ Mathilda was written in 2015/2016 by Chris Rohlf at Yahoo
 
 ## Copyright
 
-Copyright 2015 Yahoo Inc.
+Copyright 2015/2016 Yahoo Inc.
 Licensed under the BSD license, see LICENSE file for terms.
 Written by Chris Rohlf
