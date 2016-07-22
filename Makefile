@@ -5,27 +5,34 @@
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall -pedantic
 LDFLAGS = -lcurl -luv
-TEST_FLAGS = -DDEBUG -ggdb -DMATHILDA_TESTING
+MATHILDA_LDFLAGS = build/libmathilda.so
+INCLUDE_DIR = -I utils/ -I lib/
+DEBUG_FLAGS = -DDEBUG -ggdb
+UNIT_TEST = -DMATHILDA_TESTING
 
-all: library
+all: library spider dirbuster test
+
+## Builds libmathilda library shared object
+## This includes everything in utils/
+library:
+	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) -fPIC lib/mathilda.cpp lib/mathilda_fork.cpp utils/mathilda_utils.cpp \
+	$(LDFLAGS) $(INCLUDE_DIR) -shared -o build/libmathilda.so && chmod 644 build/libmathilda.so
+
+## Builds a stand alone spider for testing
+spider: library
+	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) $(INCLUDE_DIR) -DSPIDER utils/spider.cpp -o build/spider $(LDFLAGS) $(MATHILDA_LDFLAGS) -lgumbo
+
+## Builds a stand alone dirbuster for testing
+dirbuster: library
+	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) $(INCLUDE_DIR) -DDIRBUSTER utils/dirbuster.cpp -o build/dirbuster $(LDFLAGS) $(MATHILDA_LDFLAGS)
 
 ## Builds the standard unit tests found
 ## in mathilda.cpp
-test:
-	$(CXX) $(CXXFLAGS) $(TEST_FLAGS) mathilda.cpp mathilda_fork.cpp mathilda_utils.cpp -o mathilda_test $(LDFLAGS)
+test: library
+	$(CXX) $(CXXFLAGS) $(UNIT_TEST) $(INCLUDE_DIR) $(DEBUG_FLAGS) lib/mathilda.cpp lib/mathilda_fork.cpp \
+	utils/mathilda_utils.cpp -o build/mathilda_test $(LDFLAGS) $(MATHILDA_LDFLAGS)
 
-## Builds a stand alone spider for testing
-spider:
-	$(CXX) $(CXXFLAGS) $(TEST_FLAGS) -DSPIDER mathilda.cpp mathilda_fork.cpp mathilda_utils.cpp spider.cpp -o spider $(LDFLAGS) -lgumbo
-
-## Builds a stand alone dirbuster for testing
-dirbuster:
-	$(CXX) $(CXXFLAGS) $(TEST_FLAGS) -DDIRBUSTER mathilda.cpp mathilda_fork.cpp mathilda_utils.cpp dirbuster.cpp -o dirbuster $(LDFLAGS)
-
-## Builds libmathilda DSO. This is the default
-library:
-	$(CXX) $(CXXFLAGS) $(TEST_FLAGS) -fPIC -DSPIDER mathilda.cpp mathilda_fork.cpp mathilda_utils.cpp spider.cpp $(LDFLAGS) -shared -o libmathilda.so
-
-## Cleans up all build artificats
+## Cleans up all build artificats by
+## deleting everything in build/
 clean:
-	rm *.o mathilda_test spider dirbuster libmathilda.so
+	rm build/*
