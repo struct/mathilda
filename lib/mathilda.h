@@ -221,4 +221,3 @@ void curl_close_cb(uv_handle_t *handle);
 void start_timeout(CURLM *multi, long timeout_ms, void *userp);
 void on_timeout(uv_timer_t *req, int status);
 int handle_socket(CURL *easy, curl_socket_t s, int action, void *userp, void *socketp);
-static size_t _curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp);

@@ -14,6 +14,8 @@
 #include "mathilda.h"
 #include "mathilda_utils.h"
 
+static size_t _curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp);
+
 void Mathilda::add_instruction(Instruction *i) {
 	i->mathilda = this;
 	instructions.push_back(i);
