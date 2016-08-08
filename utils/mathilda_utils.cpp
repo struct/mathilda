@@ -351,14 +351,14 @@ void MathildaUtils::name_to_addr_a(std::vector<std::string> const &hostnames, st
 /// A wrapper for getnameinfo
 ///
 /// Performs a synchronous addr to name DNS lookup using
-/// getnameinfo.  This function makes it easier to know 
+/// getnameinfo. This function makes it easier to know
 /// if an IP address has a valid DNS entry or not. Most
 /// of the time you want to make HTTP calls using the
 /// hostname and not the IP address and set the Host:
 /// header correctly
 ///
 /// @param[in] ip A std::string containing the IP address
-/// @param[out] result A std::string 
+/// @param[out] result A std::string containing the result
 /// @return Returns OK if successful, ERR if not
 int MathildaUtils::addr_to_name(std::string const &ip, std::string &result) {
 	char host[NI_MAXHOST];
@@ -380,7 +380,18 @@ int MathildaUtils::addr_to_name(std::string const &ip, std::string &result) {
 	return ERR;
 }
 
-
+/// An asynchronous wrapper for addr_to_name/getnameinfo
+///
+/// Performs asynchronous addr to name DNS lookup using
+/// getnameinfo. This function makes it easier to know
+/// if an IP address has a valid DNS entry or not. Most
+/// of the time you want to make HTTP calls using the
+/// hostname and not the IP address and set the Host:
+/// header correctly
+///
+/// @param[in] ips A vector of std::string containing the IP addresses
+/// @param[out] results A vector of std::string with the results
+/// @return Returns OK if successful, ERR if not
 void MathildaUtils::addr_to_name_a(std::vector<std::string> const &ips, std::vector<std::string> &results) {
 	MathildaFork *mf = new MathildaFork();
 
