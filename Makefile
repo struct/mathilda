@@ -15,7 +15,8 @@ all: library spider dirbuster test
 ## Builds libmathilda library shared object
 ## This includes everything in utils/
 library:
-	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) -fPIC lib/mathilda.cpp lib/mathilda_fork.cpp utils/mathilda_utils.cpp \
+	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) -fPIC lib/mathilda.cpp lib/mathilda_fork.cpp lib/mathilda_c.cpp \
+	utils/mathilda_utils.cpp \
 	$(LDFLAGS) $(INCLUDE_DIR) -shared -o build/libmathilda.so && chmod 644 build/libmathilda.so
 
 ## Builds a stand alone spider for testing

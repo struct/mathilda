@@ -183,19 +183,19 @@ public:
 	uint32_t process_timeout;
 	uint32_t shm_sz;
 	std::vector<Instruction *> instructions;
-	std::vector<CURL *> easy_handles;
+	std::function<void (ProcessInfo *pi)> finish;
 	uv_loop_t *loop;
 	uv_timer_t timeout;
-	CURLM *multi_handle;
-	std::function<void (ProcessInfo *pi)> finish;
+	std::vector<CURL *> easy_handles;
 	MathildaFork *mf;
+	CURLM *multi_handle;
+	int shm_id;
+	uint8_t *shm_ptr;
 
 private:
 	void mathilda_proc_init(uint32_t proc_num, uint32_t start, uint32_t end, uint32_t sz_of_work);
 	void setup_uv();
 	int create_worker_processes();
-	int shm_id;
-	uint8_t *shm_ptr;
 };
 
 /// Socket_Info Structure is used internally
