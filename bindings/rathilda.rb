@@ -21,12 +21,17 @@ module Mathilda
 	attach_function :mathilda_set_slow_parallel, [ :pointer, :int32 ], :void
 	attach_function :mathilda_set_process_timeout, [ :pointer, :int32 ], :void
 	attach_function :mathilda_set_shm_sz, [ :pointer, :int32 ], :void
-	attach_function :mathilda_execute_instructions, [ :pointer ], :int32
+	attach_function :mathilda_execute_instructions, [ :pointer ], :int32, :blocking => true
 	attach_function :mathilda_get_shm_id, [ :pointer ], :int32
 	attach_function :mathilda_get_shm_ptr, [ :pointer ], :pointer
 
 	callback :finish_function, [:pointer ], :void
 	attach_function :mathilda_set_finish, [ :pointer, :finish_function ], :void
+end
+
+class Instruction
+	extend FFI::Library
+	ffi_lib '../build/libmathilda.so'
 
 	attach_function :new_instruction, [ :string, :string ], :pointer
 	attach_function :delete_instruction, [ :pointer ], :void
@@ -56,24 +61,50 @@ module Mathilda
 	attach_function :instruction_get_curl_code, [ :pointer ], :int
 end
 
-## This is a simple example that I intend to build upon
+class Instruction
+	attr_accessor :instruction, :host, :path
+
+	def initialize(host, path)
+		return nil if !host.kind_of?(String) or !path.kind_of?(String)
+		@host = host
+		@path = path
+		@instruction = Instruction::new_instruction(host, path)
+	end
+
+	def method_missing(m, *args, &block)
+		m = "instruction_#{m}"
+		eval "Instruction::#{m}(@instruction, *args)"
+	end
+end
+
 class Rathilda
 	attr_accessor :mathilda
 
 	def initialize
-		mathilda = Mathilda::new_mathilda
-		i = Mathilda::new_instruction("www.yahoo.com", "/")
+		@mathilda = Mathilda::new_mathilda
+	end
 
-		p = Proc.new do |a,b,c|
-			r = Response.new(c)
-			puts r[:text].read_string
-		end
+	def add_instruction(i)
+		Mathilda::mathilda_add_instruction(@mathilda, i.instruction)
+	end
 
-		Mathilda::instruction_set_after(i, p)
-		Mathilda::mathilda_add_instruction(mathilda, i)
-		Mathilda::mathilda_set_safe_to_fork(mathilda, 0)
-		Mathilda::mathilda_execute_instructions(mathilda)
+	def method_missing(m, *args, &block)
+		m = "mathilda_#{m}"
+		eval "Mathilda::#{m}(@mathilda, *args)"
 	end
 end
 
-r = Rathilda.new
+## Example testing code
+if __FILE__ == $0
+	r = Rathilda.new
+
+	after_callback = Proc.new do |a,b,c|
+		r = Response.new(c)
+		puts r[:text].read_string
+	end
+
+	i = Instruction.new("yahoo.com", "/")
+	i.set_after(after_callback)
+	r.add_instruction(i)
+	r.execute_instructions
+end
