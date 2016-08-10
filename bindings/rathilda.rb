@@ -1,3 +1,6 @@
+## Copyright 2015/2016 Yahoo Inc.
+## Licensed under the BSD license, see LICENSE file for terms.
+## Written by Chris Rohlf
 ## Rathilda is a Ruby FFI binding for libmathilda
 require 'ffi'
 
