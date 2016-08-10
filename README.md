@@ -1,6 +1,6 @@
 # Mathilda
 
-A C++11 class for writing fast and scalable web exploits and scanners in C++11
+A library for writing fast and scalable web exploits and scanners in C++11
 
 Disclaimer: I had to strip some of Mathilda's important functionality in order to open source it. You may need to do some modifications and tweaking in order for it to be useful for you. Feel free to reach out to me with your ideas and pull requests.
 
@@ -28,7 +28,7 @@ A bit of history for you. This code was originally a threadpool but I ran into l
 
 ## API
 
-All source code is documented using Doxygen and the documentation automatically created in the project. Everything below is a quick start guide to familiarize you with how to use Mathilda and Instruction classes. I recommend starting here and referring to the Doxygen generated documentation when writing code.
+All source code is documented using Doxygen and the documentation automatically created in the project. Everything below is a quick start guide to familiarize you with how to use Mathilda and Instruction classes. I recommend starting here and referring to the Doxygen generated documentation when writing code. Mathilda also contains a Ruby binding, Rathilda.
 
 ### Mathilda class functions
 
