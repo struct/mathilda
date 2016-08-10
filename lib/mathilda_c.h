@@ -33,7 +33,7 @@ extern "C" {
 	uint8_t *mathilda_get_shm_ptr(CMathilda *cm);
 	void mathilda_set_finish(CMathilda *cm, finish_fn *fn);
 
-	CInstruction *new_instruction(char *path, char *host);
+	CInstruction *new_instruction(char *host, char *path);
 	void delete_instruction(CInstruction *ci);
 	int instruction_add_http_header(CInstruction *ci, char *header);
 	int instruction_set_user_agent(CInstruction *ci, char *ua);

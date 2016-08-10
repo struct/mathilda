@@ -75,8 +75,8 @@ void mathilda_set_finish(CMathilda *cm, finish_fn *fn) {
 
 // Instruction class wrapping
 
-CInstruction *new_instruction(char *path, char *host) {
-	return reinterpret_cast<void*>(new Instruction(path, host));
+CInstruction *new_instruction(char *host, char *path) {
+	return reinterpret_cast<void*>(new Instruction(host, path));
 }
 
 void delete_instruction(CInstruction *ci) {
