@@ -9,7 +9,6 @@ end
 module Mathilda
 	extend FFI::Library
 	ffi_lib '../build/libmathilda.so'
-
 	attach_function :new_mathilda, [], :pointer
 	attach_function :delete_mathilda, [ :pointer ], :void
 	attach_function :mathilda_add_instruction, [ :pointer, :pointer], :void
@@ -24,7 +23,6 @@ module Mathilda
 	attach_function :mathilda_execute_instructions, [ :pointer ], :int32, :blocking => true
 	attach_function :mathilda_get_shm_id, [ :pointer ], :int32
 	attach_function :mathilda_get_shm_ptr, [ :pointer ], :pointer
-
 	callback :finish_function, [:pointer ], :void
 	attach_function :mathilda_set_finish, [ :pointer, :finish_function ], :void
 end
@@ -32,7 +30,6 @@ end
 class Instruction
 	extend FFI::Library
 	ffi_lib '../build/libmathilda.so'
-
 	attach_function :new_instruction, [ :string, :string ], :pointer
 	attach_function :delete_instruction, [ :pointer ], :void
 	attach_function :instruction_add_http_header, [ :pointer , :string ], :int32
