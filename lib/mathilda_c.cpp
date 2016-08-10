@@ -10,6 +10,8 @@
 
 // Mathilda class wrapping
 
+extern "C" {
+
 CMathilda *new_mathilda() {
 	return reinterpret_cast<void*>(new Mathilda());
 }
@@ -18,9 +20,9 @@ void delete_mathilda(CMathilda *cm) {
 	delete reinterpret_cast<Mathilda *>(cm);
 }
 
-void mathilda_add_instruction(CMathilda *cm, Instruction *i) {
-	i->mathilda = reinterpret_cast<Mathilda *>(cm);
-	i->mathilda->instructions.push_back(i);
+void mathilda_add_instruction(CMathilda *cm, CInstruction *i) {
+	reinterpret_cast<Instruction *>(i)->mathilda = reinterpret_cast<Mathilda *>(cm);
+	reinterpret_cast<Instruction *>(i)->mathilda->instructions.push_back(reinterpret_cast<Instruction *>(i));
 }
 
 void mathilda_clear_instructions(CMathilda *cm) {
@@ -180,3 +182,5 @@ void instruction_set_before(CInstruction *ci, before_fn *bf) {
 void instruction_set_after(CInstruction *ci, after_fn *af) {
 	reinterpret_cast<Instruction *>(ci)->after = af;
 }
+
+} // extern C

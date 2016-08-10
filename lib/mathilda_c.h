@@ -5,6 +5,8 @@
 // Mathilda C interface header. This interface is kind of ugly
 // but its only meant for FFI/Ctypes bindings. If you can write
 // and compile C then you can write C++ and don't need this.
+// This file has been annotated with custom comments so I can
+// easily parse it with Ruby and spit out an FFI interface
 
 #include "mathilda.h"
 
@@ -17,19 +19,22 @@ extern "C" {
 
 	CMathilda *new_mathilda();
 	void delete_mathilda(CMathilda *cm);
-	void mathilda_add_instruction(CMathilda *cm, Instruction *i);
+	void mathilda_add_instruction(CMathilda *cm, CInstruction *i);
 	void mathilda_clear_instructions(CMathilda *cm);
 	void mathilda_wait_loop(CMathilda *cm);
-	int mathilda_execute_instructions(CMathilda *cm);
-	int mathilda_get_shm_id(CMathilda *cm);
-	uint8_t *mathilda_get_shm_ptr(CMathilda *cm);
 	void mathilda_set_use_shm(CMathilda *cm, int value);
 	void mathilda_set_safe_to_fork(CMathilda *cm, int value);
 	void mathilda_set_cpu(CMathilda *cm, int value);
 	void mathilda_set_slow_parallel(CMathilda *cm, int value);
 	void mathilda_set_process_timeout(CMathilda *cm, int value);
 	void mathilda_set_shm_sz(CMathilda *cm, int value);
+	int mathilda_execute_instructions(CMathilda *cm);
+	int mathilda_get_shm_id(CMathilda *cm);
+	uint8_t *mathilda_get_shm_ptr(CMathilda *cm);
+	void mathilda_set_finish(CMathilda *cm, finish_fn *fn);
 
+	CInstruction *new_instruction(char *path, char *host);
+	void delete_instruction(CInstruction *ci);
 	int instruction_add_http_header(CInstruction *ci, char *header);
 	int instruction_set_user_agent(CInstruction *ci, char *ua);
 	void instruction_set_host(CInstruction *ci, char *host);
@@ -48,8 +53,8 @@ extern "C" {
 	void instruction_set_response_code(CInstruction *ci, uint32_t value);
 	void instruction_set_connect_timeout(CInstruction *ci, uint32_t value);
 	void instruction_set_http_timeout(CInstruction *ci, uint32_t value);
-	Response *instruction_get_response(CInstruction *ci);
-	CURLcode instruction_get_curl_code(CInstruction *ci);
 	void instruction_set_before(CInstruction *ci, before_fn *bf);
 	void instruction_set_after(CInstruction *ci, after_fn *af);
+	Response *instruction_get_response(CInstruction *ci);
+	CURLcode instruction_get_curl_code(CInstruction *ci);
 }
