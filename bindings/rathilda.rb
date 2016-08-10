@@ -72,8 +72,7 @@ class Instruction
 	end
 
 	def method_missing(m, *args, &block)
-		m = "instruction_#{m}"
-		eval "Instruction::#{m}(@instruction, *args)"
+		eval "Instruction::instruction_#{m}(@instruction, *args)"
 	end
 end
 
@@ -89,8 +88,7 @@ class Rathilda
 	end
 
 	def method_missing(m, *args, &block)
-		m = "mathilda_#{m}"
-		eval "Mathilda::#{m}(@mathilda, *args)"
+		eval "Mathilda::mathilda_#{m}(@mathilda, *args)"
 	end
 end
 
