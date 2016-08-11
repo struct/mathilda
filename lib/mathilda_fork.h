@@ -104,6 +104,7 @@ public:
 	int get_shm_id();
 	int shm_store_string(const char *str, size_t sz);
 	int shm_store_string(const char *str);
+	int shm_retrieve_strings(ProcessInfo *proc_info, std::vector<std::string> &strings);
 	int shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::vector<std::string> &strings);
 	uint8_t *get_shm_ptr();
 	size_t get_shm_size();

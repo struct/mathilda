@@ -13,6 +13,7 @@
 
 #include "mathilda.h"
 #include "mathilda_utils.h"
+#include "mathilda_dns.h"
 
 static size_t _curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp);
 
@@ -543,17 +544,22 @@ int main(int argc, char *argv[]) {
 	bool ret = 0;
 	int iret = 0;
 
+	unique_ptr<MathildaDNS> mdns(new MathildaDNS(true));
+
 	std::vector<std::string> out;
-	iret = MathildaUtils::name_to_addr("www.yahoo.com", out, false);
+	iret = mdns->name_to_addr("www.yahoo.com", out, false);
 
 	for(auto j : out) {
 		fprintf(stdout, "name_to_addr(www.yahoo.com) = %d %s\n", iret, j.c_str());
 	}
-
-	iret = MathildaUtils::name_to_addr("aaaaaaa.test.com", out, true);
-	fprintf(stdout, "name_to_addr(aaaaaaa.test.com) = %d\n", iret);
+	for(auto i : mdns->dns_cache) {
+		fprintf(stdout, "[DNS Cache] %s -> %s\n", i.first.c_str(), i.second.c_str());
+	}
 
 	out.clear();
+
+	iret = mdns->name_to_addr("aaaaaaa.test.com", out, true);
+	fprintf(stdout, "name_to_addr(aaaaaaa.test.com) = %d\n", iret);
 
 	std::vector<std::string> hostnames;
 	hostnames.push_back("www.yahoo.com");
@@ -578,7 +584,7 @@ int main(int argc, char *argv[]) {
 	hostnames.push_back("lastpass.com");
 	hostnames.push_back("github.io");
 	hostnames.push_back("mongodb.com");
-	MathildaUtils::name_to_addr_a(hostnames, out);
+	mdns->name_to_addr_a(hostnames, out);
 
 	fprintf(stdout, "%zu/%zu results for async reverse DNS lookup:\n", out.size(), hostnames.size());
 
@@ -586,10 +592,14 @@ int main(int argc, char *argv[]) {
 		cout << o << endl;
 	}
 
+	for(auto i : mdns->dns_cache) {
+		fprintf(stdout, "[DNS Cache] %s -> %s\n", i.first.c_str(), i.second.c_str());
+	}
+
 	std::string ip = "8.8.8.8";
 	std::string out_r;
 
-	iret = MathildaUtils::addr_to_name(ip, out_r);
+	iret = mdns->addr_to_name(ip, out_r);
 	fprintf(stdout, "addr_to_name(8.8.8.8) = %s %d\n", out_r.c_str(), iret);
 
 	std::vector<std::string> ips_v;
@@ -597,8 +607,9 @@ int main(int argc, char *argv[]) {
 	ips_v.push_back("4.4.4.4");
 	ips_v.push_back("6.6.6.6");
 	ips_v.push_back("127.0.0.1");
+
 	std::vector<std::string> ips_v_out;
-	MathildaUtils::addr_to_name_a(ips_v, ips_v_out);
+	mdns->addr_to_name_a(ips_v, ips_v_out);
 
 	fprintf(stdout, "%zu/%zu results for async DNS lookup:\n", ips_v_out.size(), ips_v.size());
 

@@ -9,6 +9,7 @@ MATHILDA_LDFLAGS = build/libmathilda.so
 INCLUDE_DIR = -I utils/ -I lib/
 DEBUG_FLAGS = -DDEBUG -ggdb
 UNIT_TEST = -DMATHILDA_TESTING
+ASAN = -fsanitize=address -lasan
 
 all: library spider dirbuster test
 
@@ -16,7 +17,7 @@ all: library spider dirbuster test
 ## This includes everything in utils/
 library:
 	$(CXX) $(CXXFLAGS) $(DEBUG_FLAGS) -fPIC lib/mathilda.cpp lib/mathilda_fork.cpp lib/mathilda_c.cpp \
-	utils/mathilda_utils.cpp \
+	utils/mathilda_utils.cpp utils/mathilda_dns.cpp \
 	$(LDFLAGS) $(INCLUDE_DIR) -shared -o build/libmathilda.so && chmod 644 build/libmathilda.so
 
 ## Builds a stand alone spider for testing

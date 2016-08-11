@@ -32,6 +32,19 @@ size_t MathildaFork::get_shm_size() {
 /// be used for parent<->child exchange of
 /// data via shared memory
 ///
+/// @param[in] str Pointer to a NULL terminated C string
+int MathildaFork::shm_store_string(const char *str) {
+	return shm_store_string(str, strlen(str));
+}
+
+/// Adds a string to an array of [size, string]
+/// structures in shared memory
+///
+/// Inserts a string and its corresponding
+/// length value into a list. Intended to
+/// be used for parent<->child exchange of
+/// data via shared memory
+///
 /// @param[in] str Pointer to a C string
 /// @param[in] sz Size of the string
 int MathildaFork::shm_store_string(const char *str, size_t sz) {
@@ -66,6 +79,18 @@ int MathildaFork::shm_store_string(const char *str, size_t sz) {
 /// Extracts strings from shared memory and puts
 /// them into a std::vector
 ///
+/// @param[in] proc_info A pointer to a ProcessInfo structure
+/// @param[in] strings A reference to a vector of std::string
+/// @return Returns the size of the vector
+int MathildaFork::shm_retrieve_strings(ProcessInfo *proc_info, std::vector<std::string> &strings) {
+	return shm_retrieve_strings(proc_info->shm_ptr, proc_info->shm_size, strings);
+}
+
+/// Extracts strings from shared memory and puts
+/// them into a std::vector
+///
+/// @param[in] shm_ptr A pointer to the shared memory segment
+/// @param[in] shm_size The size of the shared memory segment
 /// @param[in] strings A reference to a vector of std::string
 /// @return Returns the size of the vector
 int MathildaFork::shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::vector<std::string> &strings) {
@@ -89,19 +114,6 @@ int MathildaFork::shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::v
 	}
 
 	return strings.size();
-}
-
-/// Adds a string to an array of [size, string]
-/// structures in shared memory
-///
-/// Inserts a string and its corresponding
-/// length value into a list. Intended to
-/// be used for parent<->child exchange of
-/// data via shared memory
-///
-/// @param[in] str Pointer to a NULL terminated C string
-int MathildaFork::shm_store_string(const char *str) {
-	return shm_store_string(str, strlen(str));
 }
 
 // Sets the processor affinity
@@ -331,6 +343,7 @@ pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz, uint32_t 
 
 		my_proc_info.pid = getpid();
 		my_proc_info.shm_id = pi->shm_id;
+		my_proc_info.shm_size = pi->shm_size;
 
 		if(set_core == true) {
 			set_affinity(core);
