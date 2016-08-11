@@ -78,8 +78,6 @@ This class needs to be created with the new operator, filled in, and passed to t
 
 These utility functions were written to make writing libmathilda tools easier. When working with HTTP and URIs you often need to work a collection of strings in some way. Sometimes its tokenizing them, or modifying them for fuzzing. These functions will help you do those kinds of operations using simple STL containers. The documentation for each function is auto generated using doxygen. Please see the 'docs' directory for more information.
 
-	* name_to_addr(std::string const &, std::vector<std::string> &, bool) - Synchronous DNS lookups
-	* name_to_addr_a(std::vector<std::string> const &, std::vector<std::string> &) - Asynchronous DNS lookups
 	* shm_store_string(uint8_t *, const char *, size_t) - Stores a string in shared memory in [length,string] format
 	* get_http_headers(const char *, std::map<std::string, std::string> &) - Returns a std::map of HTTP headers from a raw HTTP response
 	* read_file(char *, std::vector<std::string> &) - Reads a file line by line into a std::vector
@@ -95,6 +93,18 @@ These utility functions were written to make writing libmathilda tools easier. W
 	* extract_host_from_uri(std::string const &) - Extracts the hostname from a URI
 	* extract_path_from_uri(std::string const &) - Extracts the path from a URI
 	* normalize_uri(std::string const &) - Attempts to normalize a URI
+
+### MathildaDNS class functions
+
+One of the slowest parts of writing networked tools is DNS lookups. These class methods should make that easier. The functions with the _a suffix denote an asynchronous call. These functions resolve multiple hostnames or IP addresses and block until they complete or until 30 seconds has passed. The MathildaDNS class only contains a very simple DNS cache in the form of a std::map. The key to this map is a string containing an IP address and the data is a hostname it maps to. IP addresses in the cache are unique but hostnames may not be (i.e. multiple IP addresses will map to a single hostname). This cache is very simple and is only helpful if you are repeatedly scanning the same set of hosts over and over.
+
+	* name_to_addr(std::string const &, std::vector<std::string> &, bool) - Synchronous DNS name to address translation
+	* name_to_addr_a(std::vector<std::string> const &, std::vector<std::string> &) - Asynchronous DNS name to address translation
+	* addr_to_name(std::string const &, std::vector<std::string> &, bool) - Synchronous DNS address to name translation
+	* addr_to_name_a(std::vector<std::string> const &ips, std::vector<std::string> &) - Asynchronous DNS address to name translation
+	* flush_cache() - Flushes the DNS cache within the class
+	* disable_cache() - Disables the caching mechanism
+	* enable_cache() - Enables the caching mechanism
 
 ### Response Structure
 
