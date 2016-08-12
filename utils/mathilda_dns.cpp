@@ -124,11 +124,9 @@ void MathildaDNS::name_to_addr_a(std::vector<std::string> const &hostnames, std:
 
 			for(it = hostnames.begin()+start; it != hostnames.begin()+end; ++it) {
 				std::vector<std::string> r;
-				/// Sane timeout for our DNS lookups
-				/// SIGALRM is caught by MathildaFork
-				alarm(30);
-
 				int ret = 0;
+
+				alarm(30);
 
 				if(use_cache == true) {
 					disable_cache();
@@ -276,11 +274,9 @@ void MathildaDNS::addr_to_name_a(std::vector<std::string> const &ips, std::vecto
 
 			for(it = ips.begin()+start; it != ips.begin()+end; ++it) {
 				std::string r;
-				/// Sane timeout for our DNS lookups
-				/// SIGALRM is caught by our fork class
-				alarm(30);
-
 				int ret = 0;
+
+				alarm(30);
 
 				if(use_cache == true) {
 					disable_cache();
