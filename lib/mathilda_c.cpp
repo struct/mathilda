@@ -4,7 +4,9 @@
 
 // This is a C interface to the C++ Mathilda library
 // The C interface allows us to write FFI or CTypes
-// much easier than trying to wrap the C++ classes
+// much easier than trying to wrap the C++ classes.
+// The C API functions exactly the same as the C++
+// API except where documented in this file
 
 #include "mathilda_c.h"
 
@@ -12,10 +14,12 @@
 
 extern "C" {
 
+/// Creates a Mathilda class
 CMathilda *new_mathilda() {
 	return reinterpret_cast<void*>(new Mathilda());
 }
 
+/// Deletes a Mathilda class
 void delete_mathilda(CMathilda *cm) {
 	delete reinterpret_cast<Mathilda *>(cm);
 }
@@ -75,32 +79,22 @@ void mathilda_set_finish(CMathilda *cm, finish_fn *fn) {
 
 // Instruction class wrapping
 
+/// Creates a new Instruction class
 CInstruction *new_instruction(char *host, char *path) {
 	return reinterpret_cast<void*>(new Instruction(host, path));
 }
 
+/// Deletes an Instruction class
 void delete_instruction(CInstruction *ci) {
 	delete reinterpret_cast<Instruction *>(ci);
 }
 
 int instruction_add_http_header(CInstruction *ci, char *header) {
-	reinterpret_cast<Instruction *>(ci)->http_header_slist = curl_slist_append(reinterpret_cast<Instruction *>(ci)->http_header_slist, header);
-
-	if(reinterpret_cast<Instruction *>(ci)->http_header_slist == NULL) {
-		return ERR;
-	}
-
-	curl_easy_setopt(reinterpret_cast<Instruction *>(ci)->easy, CURLOPT_HTTPHEADER, reinterpret_cast<Instruction *>(ci)->http_header_slist);
-
-	return OK;
+	return reinterpret_cast<Instruction *>(ci)->add_http_header(header);
 }
 
 int instruction_set_user_agent(CInstruction *ci, char *ua) {
-	if(curl_easy_setopt(reinterpret_cast<Instruction *>(ci)->easy, CURLOPT_USERAGENT, ua) == CURLE_OK) {
-		return OK;
-	} else {
-		return ERR;
-	}
+	return reinterpret_cast<Instruction *>(ci)->set_user_agent(ua);
 }
 
 void instruction_set_host(CInstruction *ci, char *host) {
@@ -251,10 +245,28 @@ void mathildadns_enable_cache(CMathildaDNS *mdns) {
 	reinterpret_cast<MathildaDNS *>(mdns)->enable_cache();
 }
 
+/// A wrapper for getaddrinfo
+///
+/// Performs a synchronous name to addr DNS lookup using
+/// getaddrinfo.  This function makes it easier to know 
+/// if a hostname has a valid DNS entry or not.
+///
+/// @param[in] mdns A pointer to a MathildaDNS class
+/// @param[in] host A string containing a hostname
+/// @param[in] fast An int indicating whether the results are
+///			   needed or not. Use 0 if you just want to know
+///			   if the hostname has a valid DNS record
+/// @return Returns a pointer to the results CSV string
 char *mathildadns_name_to_addr(CMathildaDNS *mdns, char *host, int fast) {
 	std::vector<std::string> r;
 	char *results = NULL;
 	int ret = reinterpret_cast<MathildaDNS *>(mdns)->name_to_addr(host, r, fast);
+
+	if(ret == OK && fast == 1) {
+		results = (char *) malloc(1);
+		memset(results, 0x0, 1);
+		return results;
+	}
 
 	if(ret == OK) {
 		std::string z;
@@ -271,6 +283,18 @@ char *mathildadns_name_to_addr(CMathildaDNS *mdns, char *host, int fast) {
 	return results;
 }
 
+/// A wrapper for getnameinfo
+///
+/// Performs a synchronous addr to name DNS lookup using
+/// getnameinfo. This function makes it easier to know
+/// if an IP address has a valid DNS entry or not. Most
+/// of the time you want to make HTTP calls using the
+/// hostname and not the IP address and set the Host:
+/// header correctly
+///
+/// @param[in] mdns A pointer to a MathildaDNS class
+/// @param[in] ip A pointer to a string containing the IP address
+/// @return Returns a pointer to the results string
 char *mathildadns_addr_to_name(CMathildaDNS *mdns, char *ip) {
 	std::string r;
 	char *result = NULL;
@@ -285,6 +309,17 @@ char *mathildadns_addr_to_name(CMathildaDNS *mdns, char *ip) {
 	return result;
 }
 
+/// An asynchronous wrapper for getaddrinfo
+///
+/// Performs an asynchronous name to addr DNS lookup using
+/// getaddrinfo across multiple processes.  This function makes
+/// it easier to know if a hostname has a valid DNS entry or not.
+/// Its written to be used against a vector of hostnames
+///
+/// @param[in] mdns A pointer to a MathildaDNS class
+/// @param[in] hostnames A pointer to a CSV string containing hostnames
+///      	   to perform a DNS query for
+/// @return Returns a pointer to the results CSV string
 char *mathildadns_name_to_addr_a(CMathildaDNS *mdns, char *hostnames) {
 	std::vector<std::string> h;
 	std::vector<std::string> r;
@@ -303,6 +338,18 @@ char *mathildadns_name_to_addr_a(CMathildaDNS *mdns, char *hostnames) {
 	return results;
 }
 
+/// An asynchronous wrapper for addr_to_name/getnameinfo
+///
+/// Performs asynchronous addr to name DNS lookup using
+/// getnameinfo. This function makes it easier to know
+/// if an IP address has a valid DNS entry or not. Most
+/// of the time you want to make HTTP calls using the
+/// hostname and not the IP address and set the Host:
+/// header correctly
+///
+/// @param[in] mdns A pointer to a MathildaDNS class
+/// @param[in] ips A pointer to a CSV string containing IP addresses
+/// @return Returns a pointer to the results CSV string
 char *mathildadns_addr_to_name_a(CMathildaDNS *mdns, char *ips) {
 	std::vector<std::string> i;
 	std::vector<std::string> r;
