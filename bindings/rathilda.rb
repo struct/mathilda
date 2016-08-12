@@ -104,9 +104,9 @@ class RathildaUtils
 	attach_function :util_is_https_uri, [ :string ], :int
 	attach_function :util_is_subdomain, [ :string ], :int
 	attach_function :util_is_domain_host, [ :string, :string ], :int
-	attach_function :util_extract_host_from_uri, [ :string ], :string
-	attach_function :util_extract_path_from_uri, [ :string ], :string
-	attach_function :util_normalize_uri, [ :string ], :string
+	attach_function :util_extract_host_from_uri, [ :string ], :pointer
+	attach_function :util_extract_path_from_uri, [ :string ], :pointer
+	attach_function :util_normalize_uri, [ :string ], :pointer
 end
 
 class RathildaDNS
@@ -118,19 +118,35 @@ class RathildaDNS
 	attach_function :mathildadns_flush_cache, [ :pointer ], :void
 	attach_function :mathildadns_disable_cache, [ :pointer ], :void
 	attach_function :mathildadns_enable_cache, [ :pointer ], :void
-	attach_function :mathildadns_name_to_addr, [ :pointer, :string, :int ], :string
-	attach_function :mathildadns_addr_to_name, [ :pointer, :string ], :string
-	attach_function :mathildadns_name_to_addr_a, [ :pointer, :string ], :string, :blocking => true
-	attach_function :mathildadns_addr_to_name_a, [ :pointer, :string ], :string, :blocking => true
+	attach_function :mathildadns_name_to_addr, [ :pointer, :string, :int ], :pointer
+	attach_function :mathildadns_addr_to_name, [ :pointer, :string ], :pointer
+	attach_function :mathildadns_name_to_addr_a, [ :pointer, :string ], :pointer, :blocking => true
+	attach_function :mathildadns_addr_to_name_a, [ :pointer, :string ], :pointer, :blocking => true
+
+	attr_accessor :mathildadns
+
+	def initialize
+		@mathildadns = new_mathildadns
+	end
+
+	def method_missing(m, *args, &block)
+		ret = eval "mathildadns_#{m}(@mathildadns, *args)"
+
+		if m =~ /(name_to_addr|addr_to_name)/
+			return ret.read_string
+		else
+			return ret
+		end
+	end
 end
 
 ## Example testing code
 if __FILE__ == $0
-	d = RathildaDNS::new_mathildadns
-	puts "mathildadns_name_to_addr " + RathildaDNS::mathildadns_name_to_addr(d, "yahoo.com", 0)
-	puts "mathildadns_addr_to_name " + RathildaDNS::mathildadns_addr_to_name(d, "4.4.4.4")
-	puts "mathildadns_name_to_addr_a " + RathildaDNS::mathildadns_name_to_addr_a(d, "yahoo.com,cbs.com,golf.com")
-	puts "mathildadns_addr_to_name_a " + RathildaDNS::mathildadns_addr_to_name_a(d, "4.4.4.4,8.8.8.8,1.2.3.4")
+	mdns = RathildaDNS.new
+	puts mdns.name_to_addr("yahoo.com", 0)
+	puts mdns.addr_to_name("4.4.4.4")
+	puts mdns.name_to_addr_a("yahoo.com,cbs.com,golf.com")
+	puts mdns.addr_to_name_a("4.4.4.4,8.8.8.8,1.2.3.4")
 
 	r = Rathilda.new
 

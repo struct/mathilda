@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 	MathildaUtils::read_file((char *) d, dirs);
 
 	std::vector<std::string> hh;
-	hh.push_back("your-example-host.com");
+	hh.push_back(argv[1]);
 	auto cookie_file = "";
 
     Dirbuster *dirb = new Dirbuster(hh, pages, dirs, cookie_file, 80);

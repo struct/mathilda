@@ -20,6 +20,8 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
+#include <string>
+#include <cstdlib>
 
 using namespace std;
 class MathildaFork;
@@ -27,7 +29,7 @@ class MathildaFork;
 #define OK 0
 #define ERR -1
 
-#define SHM_SIZE 1000000*16
+#define SHM_SIZE 1000000*8
 
 #define DEFAULT_TIMEOUT 90
 

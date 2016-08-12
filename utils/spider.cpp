@@ -447,8 +447,8 @@ int main(int argc, char *argv[]) {
 	cout << "Spidering..." << endl;
 	std::vector<std::string> paths;
 	paths.push_back("/index.php");
-	auto hh = "your-example-host.com";
-	auto d = "your-example-host.com";
+	auto hh = argv[1];
+	auto d = argv[2];
 	auto cookie_file = "";
 	Spider *s = new Spider(paths, hh, d, cookie_file, 80);
     s->run(3);
