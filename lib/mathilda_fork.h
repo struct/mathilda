@@ -15,6 +15,8 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
+#include <string>
+#include <cstdlib>
 
 using namespace std;
 class MathildaFork;

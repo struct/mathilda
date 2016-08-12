@@ -24,6 +24,8 @@
 #include <map>
 #include <regex>
 #include <thread>
+#include <string>
+#include <cstdlib>
 
 #include "mathilda_fork.h"
 
