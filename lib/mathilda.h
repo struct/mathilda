@@ -33,7 +33,6 @@ using namespace std;
 #define MATHILDA_LIB_VERSION 1.6
 #define OK 0
 #define ERR -1
-#define SHM_SIZE 1000000*16
 
 static const char *default_ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36";
 
