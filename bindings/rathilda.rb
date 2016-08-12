@@ -4,6 +4,8 @@
 ## Rathilda is a Ruby FFI binding for libmathilda
 require 'ffi'
 
+MATHILDA_SO_PATH = '../build/libmathilda.so'
+
 class Response < FFI::Struct
 	layout :text, :pointer,
 	:size, :uint32
@@ -11,7 +13,7 @@ end
 
 module Mathilda
 	extend FFI::Library
-	ffi_lib '../build/libmathilda.so'
+	ffi_lib MATHILDA_SO_PATH
 	attach_function :new_mathilda, [], :pointer
 	attach_function :delete_mathilda, [ :pointer ], :void
 	attach_function :mathilda_add_instruction, [ :pointer, :pointer], :void
@@ -32,7 +34,7 @@ end
 
 class Instruction
 	extend FFI::Library
-	ffi_lib '../build/libmathilda.so'
+	ffi_lib MATHILDA_SO_PATH
 	attach_function :new_instruction, [ :string, :string ], :pointer
 	attach_function :delete_instruction, [ :pointer ], :void
 	attach_function :instruction_add_http_header, [ :pointer , :string ], :int32
@@ -59,9 +61,7 @@ class Instruction
 	attach_function :instruction_set_after, [ :pointer, :after_function ], :void
 	attach_function :instruction_get_response, [ :pointer ], :pointer
 	attach_function :instruction_get_curl_code, [ :pointer ], :int
-end
 
-class Instruction
 	attr_accessor :instruction, :host, :path
 
 	def initialize(host, path)
@@ -74,6 +74,29 @@ class Instruction
 	def method_missing(m, *args, &block)
 		eval "Instruction::instruction_#{m}(@instruction, *args)"
 	end
+end
+
+class RathildaUtils
+	extend FFI::Library
+	ffi_lib MATHILDA_SO_PATH
+
+	## Many of the methods in MathildaUtils are better
+	## implemented in Ruby itself instead of the binding
+	attach_function :util_link_blacklist, [ :string ], :int
+	attach_function :util_page_blacklist, [ :string ], :int
+	attach_function :util_is_http_uri, [ :string ], :int
+	attach_function :util_is_https_uri, [ :string ], :int
+	attach_function :util_is_subdomain, [ :string ], :int
+	attach_function :util_is_domain_host, [ :string, :string ], :int
+	attach_function :util_extract_host_from_uri, [ :string ], :string
+	attach_function :util_extract_path_from_uri, [ :string ], :string
+	attach_function :util_normalize_uri, [ :string ], :string
+end
+
+class RathildaDNS
+	extend FFI::Library
+	ffi_lib MATHILDA_SO_PATH
+
 end
 
 class Rathilda
