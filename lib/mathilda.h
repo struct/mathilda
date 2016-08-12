@@ -22,7 +22,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <regex>
 #include <thread>
 #include <string>
 #include <cstdlib>
