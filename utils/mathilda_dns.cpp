@@ -39,7 +39,7 @@ void MathildaDNS::enable_cache() {
 int MathildaDNS::name_to_addr(std::string const &host, std::vector<std::string> &results, bool fast) {
 	char buf[INET6_ADDRSTRLEN];
 	struct addrinfo *result = NULL, *res = NULL;
-    struct addrinfo hints;
+	struct addrinfo hints;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = 0;
@@ -90,7 +90,7 @@ int MathildaDNS::name_to_addr(std::string const &host, std::vector<std::string> 
 /// @param[in,out] results A std::vector of std::string containing the
 ///			   the results of the DNS lookups
 void MathildaDNS::name_to_addr_a(std::vector<std::string> const &hostnames, std::vector<std::string> &results) {
-	MathildaFork *mf = new MathildaFork();
+	unique_ptr<MathildaFork> mf(new MathildaFork());
 
 	uint32_t num_cores = mf->cores;
 
@@ -190,8 +190,6 @@ void MathildaDNS::name_to_addr_a(std::vector<std::string> const &hostnames, std:
 			mf->remove_child_pid(s->pid);
 		}
 	}
-
-	delete mf;
 }
 
 /// A wrapper for getnameinfo
@@ -244,7 +242,7 @@ int MathildaDNS::addr_to_name(std::string const &ip, std::string &result) {
 /// @param[out] results A vector of std::string with the results
 /// @return Returns OK if successful, ERR if not
 void MathildaDNS::addr_to_name_a(std::vector<std::string> const &ips, std::vector<std::string> &results) {
-	MathildaFork *mf = new MathildaFork();
+	unique_ptr<MathildaFork> mf(new MathildaFork());
 
 	uint32_t num_cores = mf->cores;
 
@@ -340,6 +338,4 @@ void MathildaDNS::addr_to_name_a(std::vector<std::string> const &ips, std::vecto
 			mf->remove_child_pid(s->pid);
 		}
 	}
-
-	delete mf;
 }

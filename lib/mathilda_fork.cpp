@@ -296,7 +296,7 @@ pid_t MathildaFork::fork_child(bool set_core) {
 // @param[in] sz Size of the shared memory segment
 // @return Returns the PID of the child process or ERR
 pid_t MathildaFork::fork_child(bool set_core, bool use_shm, size_t sz, uint32_t timeout) {
-	ProcessInfo *pi = new ProcessInfo;
+	ProcessInfo *pi = new ProcessInfo();
 
 	if(pi == NULL) {
 #ifdef DEBUG
