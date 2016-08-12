@@ -303,7 +303,7 @@ void MathildaUtils::split(const std::string &str, char delim, std::vector<std::s
 /// @param[in] from A std::string we want to replace in str with to
 /// @param[in] to A std::string we want want to replace from with
 void MathildaUtils::replaceAll(std::string& str, const std::string& from, const std::string& to) {
-	size_t s;
+	size_t s = 0;
 
 	if(from.size() == 0) {
 		return;
