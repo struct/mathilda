@@ -217,7 +217,7 @@ void MathildaFork::create_shm(ProcessInfo *pi, size_t sz) {
 	if(sz < SHM_SIZE) {
 		sz = SHM_SIZE;
 	}
-
+	sz = 10000;
 	pi->shm_size = sz;
 
 	pi->shm_id = shmget(IPC_PRIVATE, sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);

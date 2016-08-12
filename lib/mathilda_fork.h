@@ -10,7 +10,12 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
-#include <string.h>
+#ifdef __APPLE__
+	#include <string>
+	#include <cstdlib>
+#else
+	#include <string.h>
+#endif
 #include <errno.h>
 #include <vector>
 #include <thread>

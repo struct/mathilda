@@ -98,7 +98,7 @@ void MathildaDNS::name_to_addr_a(std::vector<std::string> const &hostnames, std:
 		num_cores = hostnames.size()-1;
 	}
 
-	for(uint32_t proc_num = 0; proc_num < num_cores; proc_num++) {
+	for(uint32_t proc_num = 0; proc_num <= num_cores; proc_num++) {
 		int p = mf->fork_child(true, true, SHM_SIZE, 60);
 
 		if(p == ERR) {
