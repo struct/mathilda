@@ -36,7 +36,7 @@ using namespace std;
 #define ERR -1
 #define SHM_SIZE 1000000*16
 
-static const char *default_ua = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2049.0 Safari/537.36";
+static const char *default_ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36";
 
 /// Response structure
 /// The structure returned upon every
