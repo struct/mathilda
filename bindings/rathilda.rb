@@ -11,9 +11,10 @@ class Response < FFI::Struct
 	:size, :uint32
 end
 
-module Mathilda
+class Rathilda
 	extend FFI::Library
 	ffi_lib MATHILDA_SO_PATH
+
 	attach_function :new_mathilda, [], :pointer
 	attach_function :delete_mathilda, [ :pointer ], :void
 	attach_function :mathilda_add_instruction, [ :pointer, :pointer], :void
@@ -30,11 +31,26 @@ module Mathilda
 	attach_function :mathilda_get_shm_ptr, [ :pointer ], :pointer
 	callback :finish_function, [:pointer ], :void
 	attach_function :mathilda_set_finish, [ :pointer, :finish_function ], :void
+
+	attr_accessor :mathilda
+
+	def initialize
+		@mathilda = new_mathilda
+	end
+
+	def add_instruction(i)
+		mathilda_add_instruction(@mathilda, i.instruction)
+	end
+
+	def method_missing(m, *args, &block)
+		eval "mathilda_#{m}(@mathilda, *args)"
+	end
 end
 
 class Instruction
 	extend FFI::Library
 	ffi_lib MATHILDA_SO_PATH
+
 	attach_function :new_instruction, [ :string, :string ], :pointer
 	attach_function :delete_instruction, [ :pointer ], :void
 	attach_function :instruction_add_http_header, [ :pointer , :string ], :int32
@@ -68,11 +84,11 @@ class Instruction
 		return nil if !host.kind_of?(String) or !path.kind_of?(String)
 		@host = host
 		@path = path
-		@instruction = Instruction::new_instruction(host, path)
+		@instruction = new_instruction(host, path)
 	end
 
 	def method_missing(m, *args, &block)
-		eval "Instruction::instruction_#{m}(@instruction, *args)"
+		eval "instruction_#{m}(@instruction, *args)"
 	end
 end
 
@@ -97,22 +113,6 @@ class RathildaDNS
 	extend FFI::Library
 	ffi_lib MATHILDA_SO_PATH
 
-end
-
-class Rathilda
-	attr_accessor :mathilda
-
-	def initialize
-		@mathilda = Mathilda::new_mathilda
-	end
-
-	def add_instruction(i)
-		Mathilda::mathilda_add_instruction(@mathilda, i.instruction)
-	end
-
-	def method_missing(m, *args, &block)
-		eval "Mathilda::mathilda_#{m}(@mathilda, *args)"
-	end
 end
 
 ## Example testing code
