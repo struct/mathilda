@@ -270,14 +270,16 @@ Q: I specified port 443 but my program keeps trying plain text HTTP over port 44
 A: You probably set Instruction::port as 443 but you probably didn't set Instruction::ssl to true. Try something like this:
 
 ```
-	if(i->port == 443) {
-		i->ssl = true;
+	if(instruction->port == 443) {
+		instruction->ssl = true;
 	}
 ```
 
 ## Who
 
 Mathilda was written in 2015/2016 by Chris Rohlf at Yahoo
+
+Thanks to John Villamil for Pathilda, and patches for the OSX port
 
 ## Copyright
 
