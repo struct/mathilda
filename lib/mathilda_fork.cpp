@@ -128,7 +128,6 @@ int MathildaFork::set_affinity(uint32_t c) {
 	int ret = 0;
 
 #ifdef __linux__
-
 	if(c >= cores) {
 		c = 0;
 	}
