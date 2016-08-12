@@ -209,22 +209,25 @@ int util_is_domain_host(char *domain, char *uri) {
 
 char *util_extract_host_from_uri(char *uri) {
 	std::string s = MathildaUtils::extract_host_from_uri(uri);
-	char *ts = (char *) malloc(s.size());
-	memcpy(ts, s.c_str(), s.size());
+	char *ts = (char *) malloc(s.size()+1);
+	memset(ts, 0x0, s.size()+1);
+	strncpy(ts, s.c_str(), s.size());
 	return ts;
 }
 
 char *util_extract_path_from_uri(char *uri) {
 	std::string s = MathildaUtils::extract_path_from_uri(uri);
-	char *ts = (char *) malloc(s.size());
-	memcpy(ts, s.c_str(), s.size());
+	char *ts = (char *) malloc(s.size()+1);
+	memset(ts, 0x0, s.size()+1);
+	strncpy(ts, s.c_str(), s.size());
 	return ts;
 }
 
 char *util_normalize_uri(char *uri) {
 	std::string s = MathildaUtils::normalize_uri(uri);
-	char *ts = (char *) malloc(s.size());
-	memcpy(ts, s.c_str(), s.size());
+	char *ts = (char *) malloc(s.size()+1);
+	memset(ts, 0x0, s.size()+1);
+	strncpy(ts, s.c_str(), s.size());
 	return ts;
 }
 
@@ -256,13 +259,13 @@ char *mathildadns_name_to_addr(CMathildaDNS *mdns, char *host, int fast) {
 	if(ret == OK) {
 		std::string z;
 
-		// Return a CSV string of results
 		for(auto &n : r) {
 			z += n + ",";
 		}
 
-		results = (char *) malloc(z.size());
-		memcpy(results, z.c_str(), z.size());
+		results = (char *) malloc(z.size()+1);
+		memset(results, 0x0, z.size()+1);
+		strncpy(results, z.c_str(), z.size());
 	}
 
 	return results;
@@ -274,8 +277,9 @@ char *mathildadns_addr_to_name(CMathildaDNS *mdns, char *ip) {
 	int ret = reinterpret_cast<MathildaDNS *>(mdns)->addr_to_name(ip, r);
 
 	if(ret == OK) {
-		result = (char *) malloc(r.size());
-		memcpy(result, r.c_str(), r.size());
+		result = (char *) malloc(r.size()+1);
+		memset(result, 0x0, r.size()+1);
+		strncpy(result, r.c_str(), r.size());
 	}
 
 	return result;
@@ -293,8 +297,9 @@ char *mathildadns_name_to_addr_a(CMathildaDNS *mdns, char *hostnames) {
 		y += z + ",";
 	}
 
-	results = (char *) malloc(y.size());
-	memcpy(results, y.c_str(), y.size());
+	results = (char *) malloc(y.size()+1);
+	memset(results, 0x0, y.size()+1);
+	strncpy(results, y.c_str(), y.size());
 	return results;
 }
 
@@ -311,11 +316,10 @@ char *mathildadns_addr_to_name_a(CMathildaDNS *mdns, char *ips) {
 		y += z + ",";
 	}
 
-	results = (char *) malloc(y.size());
-	memcpy(results, y.c_str(), y.size());
+	results = (char *) malloc(y.size()+1);
+	memset(results, 0x0, y.size()+1);
+	strncpy(results, y.c_str(), y.size());
 	return results;
 }
 
-
 } // extern C
-
