@@ -113,10 +113,25 @@ class RathildaDNS
 	extend FFI::Library
 	ffi_lib MATHILDA_SO_PATH
 
+	attach_function :new_mathildadns, [ ], :pointer
+	attach_function :delete_mathildadns, [ :pointer ], :void
+	attach_function :mathildadns_flush_cache, [ :pointer ], :void
+	attach_function :mathildadns_disable_cache, [ :pointer ], :void
+	attach_function :mathildadns_enable_cache, [ :pointer ], :void
+	attach_function :mathildadns_name_to_addr, [ :pointer, :string, :int ], :string
+	attach_function :mathildadns_addr_to_name, [ :pointer, :string ], :string
+	attach_function :mathildadns_name_to_addr_a, [ :pointer, :string ], :string, :blocking => true
+	attach_function :mathildadns_addr_to_name_a, [ :pointer, :string ], :string, :blocking => true
 end
 
 ## Example testing code
 if __FILE__ == $0
+	d = RathildaDNS::new_mathildadns
+	puts "mathildadns_name_to_addr " + RathildaDNS::mathildadns_name_to_addr(d, "yahoo.com", 0)
+	puts "mathildadns_addr_to_name " + RathildaDNS::mathildadns_addr_to_name(d, "4.4.4.4")
+	puts "mathildadns_name_to_addr_a " + RathildaDNS::mathildadns_name_to_addr_a(d, "yahoo.com,cbs.com,golf.com")
+	puts "mathildadns_addr_to_name_a " + RathildaDNS::mathildadns_addr_to_name_a(d, "4.4.4.4,8.8.8.8,1.2.3.4")
+
 	r = Rathilda.new
 
 	after_callback = Proc.new do |a,b,c|

@@ -149,7 +149,6 @@ int MathildaFork::set_affinity(uint32_t c) {
 #endif
 
 #endif
-
 	return ret;
 }
 

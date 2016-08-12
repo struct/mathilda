@@ -15,10 +15,12 @@
 extern "C" {
 	typedef void CMathilda;
 	typedef void CInstruction;
+	typedef void CMathildaDNS;
 	typedef void *(finish_fn)(ProcessInfo *);
 	typedef void *(before_fn)(Instruction *, CURL *);
 	typedef void *(after_fn)(Instruction *, CURL *, Response *);
 
+	// Mathilda
 	CMathilda *new_mathilda();
 	void delete_mathilda(CMathilda *cm);
 	void mathilda_add_instruction(CMathilda *cm, CInstruction *i);
@@ -35,6 +37,7 @@ extern "C" {
 	uint8_t *mathilda_get_shm_ptr(CMathilda *cm);
 	void mathilda_set_finish(CMathilda *cm, finish_fn *fn);
 
+	// Instruction
 	CInstruction *new_instruction(char *host, char *path);
 	void delete_instruction(CInstruction *ci);
 	int instruction_add_http_header(CInstruction *ci, char *header);
@@ -60,6 +63,7 @@ extern "C" {
 	Response *instruction_get_response(CInstruction *ci);
 	CURLcode instruction_get_curl_code(CInstruction *ci);
 
+	// MathildaUtils
 	int util_link_blacklist(char *uri);
 	int util_page_blacklist(char *text);
 	int util_is_http_uri(char *uri);
@@ -69,4 +73,15 @@ extern "C" {
 	char *util_extract_host_from_uri(char *uri);
 	char *util_extract_path_from_uri(char *uri);
 	char *util_normalize_uri(char *uri);
+
+	// MathildaDNS
+	MathildaDNS *new_mathildadns();
+	void delete_mathildadns(CMathildaDNS *mdns);
+	void mathildadns_flush_cache(CMathildaDNS *mdns);
+	void mathildadns_disable_cache(CMathildaDNS *mdns);
+	void mathildadns_enable_cache(CMathildaDNS *mdns);
+	char *mathildadns_name_to_addr(CMathildaDNS *mdns, char *host, int fast);
+	char *mathildadns_addr_to_name(CMathildaDNS *mdns, char *ip);
+	char *mathildadns_name_to_addr_a(CMathildaDNS *mdns, char *hostnames);
+	char *mathildadns_addr_to_name_a(CMathildaDNS *mdns, char *ips);
 }

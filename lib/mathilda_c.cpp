@@ -228,4 +228,94 @@ char *util_normalize_uri(char *uri) {
 	return ts;
 }
 
+MathildaDNS *new_mathildadns() {
+	return reinterpret_cast<MathildaDNS *>(new MathildaDNS());
+}
+
+void delete_mathildadns(CMathildaDNS *mdns) {
+	delete reinterpret_cast<MathildaDNS *>(mdns);
+}
+
+void mathildadns_flush_cache(CMathildaDNS *mdns) {
+	reinterpret_cast<MathildaDNS *>(mdns)->flush_cache();
+}
+
+void mathildadns_disable_cache(CMathildaDNS *mdns) {
+	reinterpret_cast<MathildaDNS *>(mdns)->disable_cache();
+}
+
+void mathildadns_enable_cache(CMathildaDNS *mdns) {
+	reinterpret_cast<MathildaDNS *>(mdns)->enable_cache();
+}
+
+char *mathildadns_name_to_addr(CMathildaDNS *mdns, char *host, int fast) {
+	std::vector<std::string> r;
+	char *results = NULL;
+	int ret = reinterpret_cast<MathildaDNS *>(mdns)->name_to_addr(host, r, fast);
+
+	if(ret == OK) {
+		std::string z;
+
+		// Return a CSV string of results
+		for(auto &n : r) {
+			z += n + ",";
+		}
+
+		results = (char *) malloc(z.size());
+		memcpy(results, z.c_str(), z.size());
+	}
+
+	return results;
+}
+
+char *mathildadns_addr_to_name(CMathildaDNS *mdns, char *ip) {
+	std::string r;
+	char *result = NULL;
+	int ret = reinterpret_cast<MathildaDNS *>(mdns)->addr_to_name(ip, r);
+
+	if(ret == OK) {
+		result = (char *) malloc(r.size());
+		memcpy(result, r.c_str(), r.size());
+	}
+
+	return result;
+}
+
+char *mathildadns_name_to_addr_a(CMathildaDNS *mdns, char *hostnames) {
+	std::vector<std::string> h;
+	std::vector<std::string> r;
+	char *results = NULL;
+	MathildaUtils::split(hostnames, ',', h);
+	reinterpret_cast<MathildaDNS *>(mdns)->name_to_addr_a(h, r);
+
+	std::string y;
+	for(auto &z : r) {
+		y += z + ",";
+	}
+
+	results = (char *) malloc(y.size());
+	memcpy(results, y.c_str(), y.size());
+	return results;
+}
+
+char *mathildadns_addr_to_name_a(CMathildaDNS *mdns, char *ips) {
+	std::vector<std::string> i;
+	std::vector<std::string> r;
+	char *results = NULL;
+	MathildaUtils::split(ips, ',', i);
+	reinterpret_cast<MathildaDNS *>(mdns)->addr_to_name_a(i, r);
+
+	std::string y;
+
+	for(auto &z : r) {
+		y += z + ",";
+	}
+
+	results = (char *) malloc(y.size());
+	memcpy(results, y.c_str(), y.size());
+	return results;
+}
+
+
 } // extern C
+
