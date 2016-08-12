@@ -9,6 +9,8 @@
 // easily parse it with Ruby and spit out an FFI interface
 
 #include "mathilda.h"
+#include "mathilda_utils.h"
+#include "mathilda_dns.h"
 
 extern "C" {
 	typedef void CMathilda;
@@ -57,4 +59,14 @@ extern "C" {
 	void instruction_set_after(CInstruction *ci, after_fn *af);
 	Response *instruction_get_response(CInstruction *ci);
 	CURLcode instruction_get_curl_code(CInstruction *ci);
+
+	int util_link_blacklist(char *uri);
+	int util_page_blacklist(char *text);
+	int util_is_http_uri(char *uri);
+	int util_is_https_uri(char *uri);
+	int util_is_subdomain(char *domain);
+	int util_is_domain_host(char *domain, char *uri);
+	char *util_extract_host_from_uri(char *uri);
+	char *util_extract_path_from_uri(char *uri);
+	char *util_normalize_uri(char *uri);
 }

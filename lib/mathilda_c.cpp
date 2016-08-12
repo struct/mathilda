@@ -183,4 +183,49 @@ void instruction_set_after(CInstruction *ci, after_fn *af) {
 	reinterpret_cast<Instruction *>(ci)->after = af;
 }
 
+int util_link_blacklist(char *uri) {
+	return MathildaUtils::link_blacklist(uri);
+}
+
+int util_page_blacklist(char *text) {
+	return MathildaUtils::page_blacklist(text);
+}
+
+int util_is_http_uri(char *uri) {
+	return MathildaUtils::is_http_uri(uri);
+}
+
+int util_is_https_uri(char *uri) {
+	return MathildaUtils::is_https_uri(uri);
+}
+
+int util_is_subdomain(char *domain) {
+	return MathildaUtils::is_subdomain(domain);
+}
+
+int util_is_domain_host(char *domain, char *uri) {
+	return MathildaUtils::is_domain_host(domain, uri);
+}
+
+char *util_extract_host_from_uri(char *uri) {
+	std::string s = MathildaUtils::extract_host_from_uri(uri);
+	char *ts = (char *) malloc(s.size());
+	memcpy(ts, s.c_str(), s.size());
+	return ts;
+}
+
+char *util_extract_path_from_uri(char *uri) {
+	std::string s = MathildaUtils::extract_path_from_uri(uri);
+	char *ts = (char *) malloc(s.size());
+	memcpy(ts, s.c_str(), s.size());
+	return ts;
+}
+
+char *util_normalize_uri(char *uri) {
+	std::string s = MathildaUtils::normalize_uri(uri);
+	char *ts = (char *) malloc(s.size());
+	memcpy(ts, s.c_str(), s.size());
+	return ts;
+}
+
 } // extern C

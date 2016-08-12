@@ -125,6 +125,10 @@ int MathildaFork::shm_retrieve_strings(uint8_t *shm_ptr, size_t shm_size, std::v
 // @param[in] CPU number to bind to
 // @return Returns OK or ERR from sched_setaffinity
 int MathildaFork::set_affinity(uint32_t c) {
+	int ret = 0;
+
+#ifdef __linux__
+
 	if(c >= cores) {
 		c = 0;
 	}
@@ -133,7 +137,7 @@ int MathildaFork::set_affinity(uint32_t c) {
 	CPU_ZERO(&cpus);
 	CPU_SET(c, &cpus);
 
-	int ret = sched_setaffinity(0, sizeof(cpus), &cpus);
+	ret = sched_setaffinity(0, sizeof(cpus), &cpus);
 
 	core = c;
 
@@ -143,6 +147,8 @@ int MathildaFork::set_affinity(uint32_t c) {
 	} else {
 		fprintf(stdout, "[MathildaFork] Child (pid: %d) successfully bound to CPU %d\n", getpid(), c);
 	}
+#endif
+
 #endif
 
 	return ret;
