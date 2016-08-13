@@ -4,7 +4,7 @@
 
 CXX = clang++
 CXXFLAGS = -std=c++11 -Wall -pedantic
-LDFLAGS = -lcurl -luv
+LDFLAGS = -L /usr/local/lib -luv -lcurl 
 MATHILDA_LDFLAGS = build/libmathilda.so
 INCLUDE_DIR = -I utils/ -I lib/ -I/usr/local/include
 DEBUG_FLAGS = -DDEBUG -ggdb
@@ -37,4 +37,4 @@ test: library
 ## Cleans up all build artificats by
 ## deleting everything in build/
 clean:
-	rm build/*
+	rm -rf build/*
