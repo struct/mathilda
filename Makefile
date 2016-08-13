@@ -2,11 +2,11 @@
 ## Licensed under the BSD license, see LICENSE file for terms.
 ## Written by Chris Rohlf
 
-CXX = g++
+CXX = clang++
 CXXFLAGS = -std=c++11 -Wall -pedantic
 LDFLAGS = -lcurl -luv
 MATHILDA_LDFLAGS = build/libmathilda.so
-INCLUDE_DIR = -I utils/ -I lib/
+INCLUDE_DIR = -I utils/ -I lib/ -I/usr/local/include
 DEBUG_FLAGS = -DDEBUG -ggdb
 UNIT_TEST = -DMATHILDA_TESTING
 ASAN = -fsanitize=address -lasan

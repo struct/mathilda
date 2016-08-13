@@ -16,9 +16,9 @@ extern "C" {
 	typedef void CMathilda;
 	typedef void CInstruction;
 	typedef void CMathildaDNS;
-	typedef void *(finish_fn)(ProcessInfo *);
-	typedef void *(before_fn)(Instruction *, CURL *);
-	typedef void *(after_fn)(Instruction *, CURL *, Response *);
+	typedef void (finish_fn)(ProcessInfo *);
+	typedef void (before_fn)(Instruction *, CURL *);
+	typedef void (after_fn)(Instruction *, CURL *, Response *);
 
 	// Mathilda
 	CMathilda *new_mathilda();
