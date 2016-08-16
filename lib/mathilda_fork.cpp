@@ -219,18 +219,17 @@ void MathildaFork::create_shm(ProcessInfo *pi, size_t sz) {
 	}
 
 	pi->shm_size = sz;
-
 	pi->shm_id = shmget(IPC_PRIVATE, sz, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
 	if(pi->shm_id == ERR) {
-		fprintf(stderr, "[MathildaFork] Could not allocate shared memory. Aborting!\n(%s)\n", strerror(errno));
+		fprintf(stderr, "[MathildaFork] Could not allocate (%lu bytes) of shared memory. Aborting! (%s)\n", pi->shm_size, strerror(errno));
 		abort();
 	}
 
 	pi->shm_ptr = (uint8_t *) shmat(pi->shm_id, 0, 0);
 
 	if(pi->shm_ptr == (void *) ERR) {
-		fprintf(stderr, "[MathildaFork] Could not get handle to shared memory. Aborting!\n(%s)\n", strerror(errno));
+		fprintf(stderr, "[MathildaFork] Could not get handle to shared memory for id (%d). Aborting! (%s)\n", pi->shm_id, strerror(errno));
 		abort();
 	}
 }

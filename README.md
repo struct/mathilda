@@ -275,6 +275,10 @@ A: You probably set Instruction::port as 443 but you probably didn't set Instruc
 	}
 ```
 
+Q: I get errors on OS X such as "too many open files" or errors related to shared memory. Help?
+
+A: OS X has low limits by default. Try increasing kern.sysv.shmseg with sysctl and look at 'launchctl limit'
+
 ## Who
 
 Mathilda was written in 2015/2016 by Chris Rohlf at Yahoo
